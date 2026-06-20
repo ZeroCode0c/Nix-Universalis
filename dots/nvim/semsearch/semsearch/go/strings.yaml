@@ -1,0 +1,379 @@
+- id: go_strings_builder
+  language: go
+  symbol: strings.Builder
+  import: strings
+  category: strings
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Construir un string concatenando piezas en un loop.
+    Alternativa eficiente a += string: evita N allocaciones intermedias.
+  not_when: >
+    No uses para 2-3 concatenaciones simples (+ o fmt.Sprintf es más claro).
+    No uses si necesitas el resultado como []byte (usa bytes.Buffer).
+  syntax: |
+    var b strings.Builder
+    for _, s := range parts {
+        b.WriteString(s)
+    }
+    result := b.String()
+  my_example: |
+    var b strings.Builder
+    for i, word := range words {
+        if i > 0 {
+            b.WriteByte(' ')
+        }
+        b.WriteString(word)
+    }
+    return b.String()
+  related: [go_strings_join, go_fmt_sprintf]
+
+- id: go_strings_fields
+  language: go
+  symbol: strings.Fields
+  import: strings
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    Dividir un string por cualquier whitespace, eliminando entradas vacías.
+    Equivalente a Python's str.split() sin argumentos: tokenizar texto.
+  not_when: >
+    No uses si el separador es específico (usa strings.Split).
+    No preserva información sobre cuántos espacios había entre tokens.
+  syntax: |
+    words := strings.Fields("  hola  mundo  ")
+    // ["hola", "mundo"]
+  my_example: |
+    line := "  Alice   30   developer  "
+    fields := strings.Fields(line)
+    // ["Alice", "30", "developer"]
+
+    // Contar palabras:
+    wordCount := len(strings.Fields(text))
+  related: [go_strings_split, go_strings_trimspace]
+
+- id: go_strings_split
+  language: go
+  symbol: strings.Split
+  import: strings
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    Dividir por un separador específico. Split incluye entradas vacías.
+    SplitN limita el número de partes. SplitAfter conserva el separador en cada parte.
+  not_when: >
+    No uses Split("") si quieres caracteres: retorna runes como strings,
+    pero para iterar sobre runes usa range directamente.
+  syntax: |
+    parts := strings.Split(s, sep)
+    parts := strings.SplitN(s, sep, n)    // máximo n partes
+    parts := strings.SplitAfter(s, sep)   // sep incluido en cada parte
+  my_example: |
+    strings.Split("a,b,,c", ",")     // ["a", "b", "", "c"]
+    strings.SplitN("a:b:c", ":", 2)  // ["a", "b:c"]
+
+    // Dividir path:
+    parts := strings.Split("/home/user/file", "/")
+    // ["", "home", "user", "file"]
+  related: [go_strings_fields, go_strings_cut]
+
+- id: go_strings_cut
+  language: go
+  symbol: strings.Cut
+  import: strings
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    Dividir en la primera ocurrencia del separador, obteniendo before/after.
+    Reemplaza strings.SplitN(s, sep, 2) con API más idiomática. Go 1.18+.
+    Ideal para parsear "key=value", "user:password@host", etc.
+  not_when: >
+    No uses si el separador puede no existir y necesitas error distinto
+    (found=false cuando no hay sep).
+  syntax: |
+    before, after, found := strings.Cut(s, sep)
+    if !found { /* sep no encontrado */ }
+  my_example: |
+    // Parsear "key=value"
+    key, value, ok := strings.Cut("Content-Type: text/html", ": ")
+    // key="Content-Type", value="text/html", ok=true
+
+    // Parsear URL user:password
+    user, rest, _ := strings.Cut("admin:secret@host", ":")
+    // user="admin", rest="secret@host"
+  related: [go_strings_split, go_strings_fields]
+
+- id: go_strings_trim
+  language: go
+  symbol: strings.TrimSpace
+  import: strings
+  category: strings
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    TrimSpace: elimina whitespace (espacios, tabs, newlines) al inicio y final.
+    Trim(s, cutset): elimina cualquier carácter del cutset de ambos lados.
+    TrimPrefix/TrimSuffix: elimina un prefijo/sufijo específico si existe.
+  not_when: >
+    No uses Trim cuando quieres eliminar solo un sufijo/prefijo exacto
+    (Trim elimina *caracteres*, no substrings: Trim("foo!!", "!") elimina todos los !).
+  syntax: |
+    strings.TrimSpace(s)             // elimina whitespace
+    strings.Trim(s, "!?.")           // elimina esos chars de ambos lados
+    strings.TrimPrefix(s, "http://") // elimina prefijo exacto si existe
+    strings.TrimSuffix(s, ".go")     // elimina sufijo exacto si existe
+    strings.TrimLeft/TrimRight(s, cutset)  // solo un lado
+  my_example: |
+    strings.TrimSpace("  hola\n")       // "hola"
+    strings.Trim("***texto***", "*")    // "texto"
+    strings.TrimPrefix("https://x", "https://")  // "x"
+    strings.TrimPrefix("http://x", "https://")   // "http://x" (sin cambio)
+  related: [go_strings_fields, go_strings_replace]
+
+- id: go_strings_replace
+  language: go
+  symbol: strings.ReplaceAll
+  import: strings
+  category: strings
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    ReplaceAll: reemplaza todas las ocurrencias de old por new.
+    Replace(s, old, new, n): reemplaza solo las primeras n ocurrencias.
+    NewReplacer: múltiples reemplazos en un solo paso, más eficiente.
+  not_when: >
+    No uses Replace con n=-1 cuando quieres reemplazar todas (usa ReplaceAll, más claro).
+  syntax: |
+    strings.ReplaceAll(s, old, new)
+    strings.Replace(s, old, new, n)  // n=-1 reemplaza todas
+
+    // múltiples reemplazos:
+    r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+    r.Replace(html)
+  my_example: |
+    strings.ReplaceAll("foo foo foo", "foo", "bar")  // "bar bar bar"
+    strings.Replace("aaa", "a", "b", 2)              // "bba"
+
+    // Escapar HTML de una vez:
+    r := strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;")
+    safe := r.Replace("<script>alert('&')</script>")
+  related: [go_strings_trim, go_regexp_replace]
+
+- id: go_strings_contains_prefix
+  language: go
+  symbol: strings.HasPrefix
+  import: strings
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Verificar si un string empieza o termina con un substring específico.
+    HasPrefix/HasSuffix/Contains son las tres verificaciones de membresía más comunes.
+  not_when: >
+    No uses Contains para verificar prefijo (HasPrefix es O(len(prefix)), Contains puede ser más costoso).
+  syntax: |
+    strings.HasPrefix(s, prefix)
+    strings.HasSuffix(s, suffix)
+    strings.Contains(s, substr)
+    strings.ContainsAny(s, chars)  // cualquier char del set
+    strings.ContainsRune(s, r)     // un rune específico
+  my_example: |
+    strings.HasPrefix("https://foo", "https://")  // true
+    strings.HasSuffix("main.go", ".go")            // true
+    strings.Contains("foobar", "oba")              // true
+    strings.ContainsAny("hello", "aeiou")          // true (tiene vocales)
+  related: [go_strings_cut, go_strings_index]
+
+- id: go_strings_index
+  language: go
+  symbol: strings.Index
+  import: strings
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Encontrar la posición (byte index) de un substring. Retorna -1 si no existe.
+    LastIndex busca desde la derecha. IndexRune/IndexByte para carácter individual.
+  not_when: >
+    No uses el índice para iterar sobre caracteres Unicode (son bytes, no runes).
+    Para iterar usa range s que da runes correctamente.
+  syntax: |
+    pos := strings.Index(s, substr)      // -1 si no existe
+    pos := strings.LastIndex(s, substr)
+    pos := strings.IndexRune(s, 'ñ')    // buscar rune específico
+    pos := strings.IndexAny(s, "aeiou") // primer char del set
+  my_example: |
+    s := "hello world"
+    strings.Index(s, "world")     // 6
+    strings.Index(s, "xyz")       // -1
+    strings.LastIndex(s, "l")     // 9
+
+    // Extraer entre delimitadores:
+    start := strings.Index(s, "(") + 1
+    end   := strings.Index(s, ")")
+    inside := s[start:end]
+  related: [go_strings_contains_prefix, go_strings_cut]
+
+- id: go_strconv_atoi
+  language: go
+  symbol: strconv.Atoi
+  import: strconv
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings, tipos]
+    properties: [runtime]
+    intent: [convertir]
+  when: >
+    Convertir string a int (Atoi) o int a string (Itoa).
+    Para otros tipos: strconv.ParseInt, ParseFloat, ParseBool.
+    Para formatear con base/precisión: strconv.FormatInt, FormatFloat.
+  not_when: >
+    No uses fmt.Sprintf("%d", n) para int→string en código de performance (Itoa es más rápido).
+  syntax: |
+    n, err := strconv.Atoi("42")      // string → int
+    s := strconv.Itoa(42)             // int → string
+
+    // tipos extendidos:
+    n64, err := strconv.ParseInt("FF", 16, 64)   // base 16
+    f, err   := strconv.ParseFloat("3.14", 64)
+    b, err   := strconv.ParseBool("true")
+  my_example: |
+    // Parsear parámetro de query
+    pageStr := r.URL.Query().Get("page")
+    page, err := strconv.Atoi(pageStr)
+    if err != nil {
+        http.Error(w, "invalid page", 400)
+        return
+    }
+
+    // int a string
+    id := strconv.Itoa(userID)
+    url := "/users/" + id
+  related: [go_fmt_sprintf, go_strings_cut]
+
+- id: go_fmt_sprintf
+  language: go
+  symbol: fmt.Sprintf
+  import: fmt
+  category: strings
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Construir un string con formato: interpolar variables con verbo de formato.
+    %v=valor default, %d=entero, %s=string, %f=float, %q=string con comillas, %T=tipo.
+  not_when: >
+    No uses para concatenar strings simples sin formato (usa + o strings.Builder).
+    No uses %v en lugar de %d/%s en código donde el tipo importa.
+  syntax: |
+    s := fmt.Sprintf("hola %s, tienes %d años", nombre, edad)
+    s := fmt.Sprintf("%q", str)   // "string con comillas"
+    s := fmt.Sprintf("%T", val)   // tipo: "int", "[]string", etc.
+    s := fmt.Sprintf("%v", any)   // valor genérico
+  my_example: |
+    msg := fmt.Sprintf("GET /users/%d HTTP/1.1", userID)
+    debug := fmt.Sprintf("type=%T value=%v", x, x)
+
+    // Padding:
+    table := fmt.Sprintf("%-20s %8.2f", name, price)
+    // "Alice                    12.50"
+  related: [go_strings_builder, go_strconv_atoi]
+
+- id: go_regexp_compile
+  language: go
+  symbol: regexp.MustCompile
+  import: regexp
+  category: strings
+  tags:
+    op: [componer, filter]
+    domain: [strings]
+    properties: [compiletime, eager]
+    intent: [transformar]
+  when: >
+    Compilar un patrón regex para usarlo múltiples veces.
+    MustCompile para patrones literales en package-level (panic si inválido, que es correcto).
+    Compile para patrones dinámicos (retorna error).
+  not_when: >
+    No uses MustCompile con patrones construidos en runtime (usa Compile + manejo de error).
+  syntax: |
+    var pattern = regexp.MustCompile(`\d+`)  // package-level
+
+    // uso:
+    pattern.FindString(text)
+    pattern.FindAllString(text, -1)
+    pattern.ReplaceAllString(text, replacement)
+    pattern.MatchString(text)
+  my_example: |
+    var emailRE = regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`)
+
+    func extractEmails(text string) []string {
+        return emailRE.FindAllString(text, -1)
+    }
+
+    // Con grupos de captura:
+    var kv = regexp.MustCompile(`(\w+)=(\w+)`)
+    matches := kv.FindAllStringSubmatch("a=1 b=2", -1)
+    // [["a=1","a","1"], ["b=2","b","2"]]
+  related: [go_regexp_replace, go_strings_replace]
+
+- id: go_regexp_replace
+  language: go
+  symbol: regexp.Regexp.ReplaceAllStringFunc
+  import: regexp
+  category: strings
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Reemplazar matches de un regex usando una función que recibe cada match
+    y devuelve el reemplazo. Equivalente a Python's re.sub con función.
+  not_when: >
+    No uses si el reemplazo es un string constante (usa ReplaceAllString).
+  syntax: |
+    result := re.ReplaceAllStringFunc(text, func(match string) string {
+        return transform(match)
+    })
+    // con grupos capturados:
+    result := re.ReplaceAllString(text, "${1}_suffix")
+  my_example: |
+    var wordRE = regexp.MustCompile(`\b\w+\b`)
+    result := wordRE.ReplaceAllStringFunc("hello world", strings.ToUpper)
+    // "HELLO WORLD"
+
+    // Con backreference:
+    var numRE = regexp.MustCompile(`(\d+)`)
+    result := numRE.ReplaceAllString("hay 3 items y 5 más", "[$1]")
+    // "hay [3] items y [5] más"
+  related: [go_regexp_compile, go_strings_replace]

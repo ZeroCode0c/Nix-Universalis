@@ -1,0 +1,655 @@
+- id: hs_list_head
+  language: haskell
+  symbol: head
+  import: Prelude
+  category: listas
+  tags:
+      op: [acceso]
+      domain: [listas]
+      intent: [primer-elemento]
+  when: >
+      Obtener el primer elemento de una lista no vacía. Operación O(1) sobre
+      linked lists.
+  not_when: >
+      No usar con listas potencialmente vacías. Preferir pattern matching o
+      safe-head.
+  syntax: |
+      head :: [a] -> a
+  my_example: |
+      head [1,2,3] -- 1
+  related: [hs_list_tail, hs_list_last]
+
+- id: hs_list_tail
+  language: haskell
+  symbol: tail
+  import: Prelude
+  category: listas
+  tags:
+      op: [sublista]
+      domain: [listas]
+      intent: [resto]
+  when: >
+      Obtener todos los elementos excepto el primero.
+  not_when: >
+      No usar con listas vacías. Pattern matching suele ser más idiomático.
+  syntax: |
+      tail :: [a] -> [a]
+  my_example: |
+      tail [1,2,3] -- [2,3]
+  related: [hs_list_head, hs_list_init]
+
+- id: hs_list_last
+  language: haskell
+  symbol: last
+  import: Prelude
+  category: listas
+  tags:
+      op: [acceso]
+      domain: [listas]
+      intent: [ultimo-elemento]
+  when: >
+      Obtener el último elemento de una lista.
+  not_when: >
+      No usar en listas grandes repetidamente. Requiere recorrido completo O(n).
+  syntax: |
+      last :: [a] -> a
+  my_example: |
+      last [1,2,3] -- 3
+  related: [hs_list_init, hs_list_head]
+
+- id: hs_list_init
+  language: haskell
+  symbol: init
+  import: Prelude
+  category: listas
+  tags:
+      op: [sublista]
+      domain: [listas]
+      intent: [todos-menos-ultimo]
+  when: >
+      Obtener todos los elementos excepto el último.
+  not_when: >
+      Evitar en listas vacías. Recorre toda la lista.
+  syntax: |
+      init :: [a] -> [a]
+  my_example: |
+      init [1,2,3] -- [1,2]
+  related: [hs_list_last, hs_list_tail]
+
+- id: hs_list_reverse
+  language: haskell
+  symbol: reverse
+  import: Prelude
+  category: listas
+  tags:
+      op: [transformacion]
+      domain: [listas]
+      intent: [invertir]
+  when: >
+      Invertir el orden de una lista. Implementable como foldl con cons
+      invertido.
+  not_when: >
+      Evitar si solo necesitas recorrer desde atrás lógicamente.
+  syntax: |
+      reverse :: [a] -> [a]
+  my_example: |
+      reverse [1,2,3] -- [3,2,1]
+  related: [hs_foldl, hs_foldr]
+
+- id: hs_list_take
+  language: haskell
+  symbol: take
+  import: Prelude
+  category: listas
+  tags:
+      op: [sublista]
+      domain: [listas]
+      intent: [prefijo]
+  when: >
+      Obtener los primeros n elementos.
+  not_when: >
+      No usar para acceso aleatorio repetido.
+  syntax: |
+      take :: Int -> [a] -> [a]
+  my_example: |
+      take 3 [1,2,3,4,5] -- [1,2,3]
+  related: [hs_list_drop]
+
+- id: hs_list_drop
+  language: haskell
+  symbol: drop
+  import: Prelude
+  category: listas
+  tags:
+      op: [sublista]
+      domain: [listas]
+      intent: [descartar-prefijo]
+  when: >
+      Eliminar los primeros n elementos.
+  not_when: >
+      No usar para slicing intensivo en listas enormes.
+  syntax: |
+      drop :: Int -> [a] -> [a]
+  my_example: |
+      drop 2 [1,2,3,4] -- [3,4]
+  related: [hs_list_take]
+
+- id: hs_list_rotate_left
+  language: haskell
+  symbol: rotateLeft
+  import: custom
+  category: listas
+  tags:
+      op: [rotacion]
+      domain: [listas]
+      intent: [rotar-izquierda]
+  when: >
+      Rotar circularmente una lista hacia la izquierda. Preserva orden relativo
+      interno.
+  not_when: >
+      No usar si necesitas inversión completa.
+  syntax: |
+      rotateLeft :: Int -> [a] -> [a]
+  my_example: |
+      rotateLeft 2 [1,2,3,4] -- [3,4,1,2]
+  related: [hs_list_rotate_right, hs_list_take, hs_list_drop]
+
+- id: hs_list_rotate_right
+  language: haskell
+  symbol: rotateRight
+  import: custom
+  category: listas
+  tags:
+      op: [rotacion]
+      domain: [listas]
+      intent: [rotar-derecha]
+  when: >
+      Rotar circularmente una lista hacia la derecha.
+  not_when: >
+      No usar si solo necesitas reverse.
+  syntax: |
+      rotateRight :: Int -> [a] -> [a]
+  my_example: |
+      rotateRight 1 [1,2,3,4] -- [4,1,2,3]
+  related: [hs_list_rotate_left]
+
+- id: hs_list_intersperse
+  language: haskell
+  symbol: intersperse
+  import: Data.List
+  category: listas
+  tags:
+      op: [intercalar]
+      domain: [listas]
+      intent: [separador]
+  when: >
+      Insertar un separador entre elementos. Equivalente a map + estructura
+      monoidal intercalada.
+  not_when: >
+      No usar si necesitas control contextual (usar fold).
+  syntax: |
+      intersperse :: a -> [a] -> [a]
+  my_example: |
+      intersperse ',' "abc" -- "a,b,c"
+  related: [hs_list_intercalate]
+
+- id: hs_list_intercalate
+  language: haskell
+  symbol: intercalate
+  import: Data.List
+  category: listas
+  tags:
+      op: [flatten, intercalar]
+      domain: [listas]
+      intent: [join]
+  when: >
+      Concatenar listas insertando un separador estructural. Es foldMap con un
+      monoid enriquecido.
+  syntax: |
+      intercalate :: [a] -> [transpose[a]] -> [a]
+  my_example: |
+      intercalate ", " ["a","b","c"] -- "a, b, c"
+  related: [hs_list_intersperse, hs_list_concat]
+
+- id: hs_list_transpose
+  language: haskell
+  symbol: transpose
+  import: Data.List
+  category: listas
+  tags:
+      op: [transformar]
+      domain: [listas, matrices]
+      intent: [reorientar]
+  when: >
+      Reorganizar estructura 2D. Interpretable como cambio de base en
+      representación matricial.
+  not_when: >
+      Listas irregulares generan truncamiento implícito.
+  syntax: |
+      transpose :: [[a]] -> [[a]]
+  my_example: |
+      transpose [[1,2],[3,4]] -- [[1,3],[2,4]]
+  related: []
+
+- id: hs_list_concat
+  language: haskell
+  symbol: concat
+  import: Prelude
+  category: listas
+  tags:
+      op: [flatten]
+      domain: [listas]
+      intent: [aplanar]
+  when: >
+      Eliminar un nivel de estructura. Es join para listas (Monad).
+  syntax: |
+      concat :: [[a]] -> [a]
+  my_example: |
+      concat [[1,2],[3]] -- [1,2,3]
+  related: [hs_list_concatMap]
+
+- id: hs_list_concatMap
+  language: haskell
+  symbol: concatMap
+  import: Prelude
+  category: listas
+  tags:
+      op: [bind]
+      domain: [listas, monad]
+      intent: [mapear_y_aplanar]
+  when: >
+      Equivalente a concat . map. Es >>= para listas.
+  syntax: |
+      concatMap :: (a -> [b]) -> [a] -> [b]
+  my_example: |
+      concatMap (\x -> [x,x]) [1,2] -- [1,1,2,2]
+  related: [hs_list_concat, hs_list_map]
+
+- id: hs_list_and
+  language: haskell
+  symbol: and
+  import: Prelude
+  category: listas
+  tags:
+      op: [reducir]
+      domain: [bool]
+      intent: [conjuncion]
+  when: >
+      Evaluar si todos los elementos son True. foldr (&&) True.
+  syntax: |
+      and :: [Bool] -> Bool
+  related: [hs_list_all]
+
+- id: hs_list_or
+  language: haskell
+  symbol: or
+  import: Prelude
+  category: listas
+  tags:
+      op: [reducir]
+      domain: [bool]
+      intent: [disyuncion]
+  syntax: |
+      or :: [Bool] -> Bool
+  related: [hs_list_any]
+
+- id: hs_list_any
+  language: haskell
+  symbol: any
+  import: Prelude
+  category: listas
+  tags:
+      op: [predicado]
+      intent: [existencial]
+  when: >
+      ∃x ∈ lista. p(x)
+  syntax: |
+      any :: (a -> Bool) -> [a] -> Bool
+
+- id: hs_list_all
+  language: haskell
+  symbol: all
+  import: Prelude
+  category: listas
+  tags:
+      op: [predicado]
+      intent: [universal]
+  when: >
+      ∀x ∈ lista. p(x)
+  syntax: |
+      all :: (a -> Bool) -> [a] -> Bool
+
+- id: hs_list_iterate
+  language: haskell
+  symbol: iterate
+  import: Prelude
+  category: listas
+  tags:
+      op: [generar]
+      domain: [listas infinitas]
+      intent: [anamorfismo]
+  when: >
+      Generación infinita mediante iteración funcional. Modelo: x_{n+1} = f(x_n)
+  syntax: |
+      iterate :: (a -> a) -> a -> [a]
+  my_example: |
+      take 5 $ iterate (*2) 1 -- [1,2,4,8,16]
+
+- id: hs_list_splitAt
+  language: haskell
+  symbol: splitAt
+  import: Prelude
+  category: listas
+  tags:
+      op: [segmentar]
+      intent: [biparticion]
+  syntax: |
+      splitAt :: Int -> [a] -> ([a],[a])
+
+- id: hs_list_takeWhile
+  language: haskell
+  symbol: takeWhile
+  import: Prelude
+  category: listas
+  tags:
+      op: [filtrar]
+      intent: [prefijo]
+  when: >
+      Extrae prefijo máximo que satisface p. Equivalente a un corte en
+      estructura ordenada.
+  syntax: |
+      takeWhile :: (a -> Bool) -> [a] -> [a]
+
+- id: hs_list_dropWhile
+  language: haskell
+  symbol: dropWhile
+  import: Prelude
+  category: listas
+  tags:
+      op: [filtrar]
+      intent: [sufijo]
+  syntax: |
+      dropWhile :: (a -> Bool) -> [a] -> [a]
+
+- id: hs_list_span
+  language: haskell
+  symbol: span
+  import: Prelude
+  category: listas
+  tags:
+      op: [segmentar]
+  when: >
+      Factorización de lista en prefijo/sufijo respecto a predicado.
+  syntax: |
+      span :: (a -> Bool) -> [a] -> ([a],[a])
+
+- id: hs_list_break
+  language: haskell
+  symbol: break
+  import: Prelude
+  category: listas
+  tags:
+      op: [segmentar]
+  when: >
+      Equivalente a span (not . p)
+  syntax: |
+      break :: (a -> Bool) -> [a] -> ([a],[a])
+
+- id: hs_list_sort
+  language: haskell
+  symbol: sort
+  import: Data.List
+  category: listas
+  tags:
+      op: [ordenar]
+      domain: [ord]
+  when: >
+      Orden total. Coste O(n log n).
+  syntax: |
+      sort :: Ord a => [a] -> [a]
+
+- id: hs_list_group
+  language: haskell
+  symbol: group
+  import: Data.List
+  category: listas
+  tags:
+      op: [agrupar]
+  when: >
+      Agrupa elementos adyacentes iguales. No es clustering global → depende de
+      orden.
+  syntax: |
+      group :: Eq a => [a] -> [[a]]
+
+- id: hs_list_inits
+  language: haskell
+  symbol: inits
+  import: Data.List
+  category: listas
+  tags:
+      op: [generar]
+  syntax: |
+      inits :: [a] -> [[a]]
+
+- id: hs_list_tails
+  language: haskell
+  symbol: tails
+  import: Data.List
+  category: listas
+  tags:
+      op: [generar]
+  syntax: |
+      tails :: [a] -> [[a]]
+
+- id: hs_list_isInfixOf
+  language: haskell
+  symbol: isInfixOf
+  import: Data.List
+  category: listas
+  tags:
+      op: [buscar]
+  syntax: |
+      isInfixOf :: Eq a => [a] -> [a] -> Bool
+
+- id: hs_list_partition
+  language: haskell
+  symbol: partition
+  import: Data.List
+  category: listas
+  tags:
+      op: [clasificar]
+  when: >
+      Clasificación total (recorre toda la lista). A diferencia de span/break.
+  syntax: |
+      partition :: (a -> Bool) -> [a] -> ([a],[a])
+
+- id: hs_list_find
+  language: haskell
+  symbol: find
+  import: Data.List
+  category: listas
+  tags:
+      op: [buscar]
+      intent: [seguro]
+  when: >
+      Devuelve Maybe → modela fallo explícito.
+  syntax: |
+      find :: (a -> Bool) -> [a] -> Maybe a
+
+- id: hs_list_etransposelemIndex
+  language: haskell
+  symbol: elemIndex
+  import: Data.List
+  category: listas
+  tags:
+      op: [buscar]
+  syntax: |
+      elemIndex :: Eq a => a -> [a] -> Maybe Int
+
+- id: hs_list_zipWith3
+  language: haskell
+  symbol: zipWith3
+  import: Prelude
+  category: listas
+  tags:
+      op: [combinar]
+  syntax: |
+      zipWith3 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
+
+- id: hs_list_lines
+  language: haskell
+  symbol: lines
+  import: Prelude
+  category: listas
+  tags:
+      op: [parsear]
+  syntax: |
+      lines :: String -> [String]
+
+- id: hs_list_words
+  language: haskell
+  symbol: words
+  import: Prelude
+  category: listas
+  tags:
+      op: [parsear]
+  syntax: |
+      words :: String -> [String]
+
+- id: hs_list_nub
+  language: haskell
+  symbol: nub
+  import: Data.List
+  category: listas
+  tags:
+      op: [set_like]
+  when: >
+      Eliminación de duplicados O(n^2).
+  not_when: >
+      Usar Data.Set para eficiencia.
+  syntax: |
+      nub :: Eq a => [a] -> [a]
+
+- id: hs_list_delete
+  language: haskell
+  symbol: delete
+  import: Data.List
+  category: listas
+  tags:
+      op: [modificar]
+  syntax: |
+      delete :: Eq a => a -> [a] -> [a]
+
+- id: hs_list_union
+  language: haskell
+  symbol: union
+  import: Data.List
+  category: listas
+  tags:
+      op: [set_like]
+  when: >
+      Unión no conmutativa en términos de orden.
+  syntax: |
+      union :: Eq a => [a] -> [a] -> [a]
+
+- id: hs_list_intersect
+  language: haskell
+  symbol: intersect
+  import: Data.List
+  category: listas
+  tags:
+      op: [set_like]
+  syntax: |
+      intersect :: Eq a => [a] -> [a] -> [a]
+
+- id: hs_list_insert
+  language: haskell
+  symbol: insert
+  import: Data.List
+  category: listas
+  tags:
+      op: [ordenado]
+  when: >
+      Inserción en lista ordenada preservando orden.
+  syntax: |
+      insert :: Ord a => a -> [a] -> [a]
+
+- id: hs_list_unlines
+  language: haskell
+  symbol: unlines
+  import: Prelude
+  category: listas
+  tags:
+      op: [componer]
+      domain: [strings]
+      intent: [serializar]
+  when: >
+      Recombinar una lista de líneas en un único string con separadores '\n'. Es
+      un morfismo inverso (no perfecto) de lines.
+  not_when: >
+      No es inversa estricta de lines: añade '\n' final.
+  syntax: |
+      unlines :: [String] -> String
+  my_example: |
+      unlines ["a","b","c"]
+      -- "a\nb\nc\n"
+  related: [hs_list_lines]
+
+- id: hs_list_elemIndices
+  language: haskell
+  symbol: elemIndices
+  import: Data.List
+  category: listas
+  tags:
+      op: [buscar]
+      domain: [listas]
+      intent: [localizar]
+  when: >
+      Obtener todas las posiciones donde aparece un elemento. Generaliza
+      elemIndex hacia multiplicidad (multiset semantics).
+  not_when: >
+      No usar si solo necesitas existencia (usar elem) o primera ocurrencia
+      (elemIndex).
+  syntax: |
+      elemIndices :: Eq a => a -> [a] -> [Int]
+  my_example: |
+      elemIndices 'a' "banana"
+      -- [1,3,5]
+  related: [hs_list_elemIndex]
+
+- id: hs_list_elem
+  language: haskell
+  symbol: elem
+  import: Prelude
+  category: listas
+  tags:
+      op: [buscar]
+      domain: [listas]
+      intent: [pertenencia]
+  when: >
+      Verificar existencia de un elemento. Semánticamente: ∃x ∈ lista. x == a
+      Equivalente a any (== a).
+  not_when: >
+      No usar si necesitas índice o múltiples ocurrencias.
+  syntax: |
+      elem :: Eq a => a -> [a] -> Bool
+  my_example: |
+      3 `elem` [1,2,3,4] -- True
+  related: [hs_list_any, hs_list_elemIndex]
+
+- id: hs_list_notElem
+  language: haskell
+  symbol: notElem
+  import: Prelude
+  category: listas
+  tags:
+      op: [buscar]
+      domain: [listas]
+      intent: [no_pertenencia]
+  when: >
+      Negación de pertenencia. Equivalente a not . elem.
+  syntax: |
+      notElem :: Eq a => a -> [a] -> Bool
+  my_example: |
+      5 `notElem` [1,2,3,4] -- True
+  related: [hs_list_elem]

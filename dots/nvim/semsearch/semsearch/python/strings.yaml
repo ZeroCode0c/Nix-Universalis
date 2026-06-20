@@ -1,0 +1,287 @@
+- id: py_str_casefold
+  language: python
+  symbol: str.casefold
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings]
+    properties: [eager]
+    intent: [convertir]
+  when: >
+    Comparar strings ignorando mayúsculas/minúsculas de forma Unicode-correcta.
+    Más agresivo que lower(): normaliza caracteres como la ß alemana ("ss").
+  not_when: >
+    No uses si solo necesitas display en minúsculas (usa lower()).
+    No uses si necesitas preservar el string original para mostrar.
+  syntax: |
+    s1.casefold() == s2.casefold()
+  my_example: |
+    "Straße".lower()    # "straße"   — incorrecto para comparación
+    "Straße".casefold() # "strasse"  — correcto para comparación Unicode
+    assert "HELLO".casefold() == "hello"
+  related: [py_str_normalize]
+
+- id: py_str_partition
+  language: python
+  symbol: str.partition
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    Dividir un string en exactamente 3 partes: antes, separador, después.
+    Cuando sabes que el separador existe y quieres los dos lados explícitamente.
+    Más claro que split(sep, 1) cuando el separador es semánticamente importante.
+  not_when: >
+    No uses si el separador puede no existir y quieres ignorar ese caso (usa split).
+    No uses si necesitas más de una división.
+  syntax: |
+    before, sep, after = s.partition(separator)
+    # si no encuentra sep: (s, '', '')
+  my_example: |
+    url = "user:password@host"
+    user, _, rest = url.partition(":")
+    # user="user", rest="password@host"
+
+    # rpartition: divide desde la derecha
+    path, _, filename = "/home/user/file.txt".rpartition("/")
+    # path="/home/user", filename="file.txt"
+  related: [py_str_split_maxsplit]
+
+- id: py_str_split_maxsplit
+  language: python
+  symbol: str.split
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    split() sin argumentos divide por cualquier whitespace y elimina entradas vacías.
+    Equivale a "obtener palabras" de un texto con espacios irregulares.
+    split(sep, maxsplit=1) para dividir solo en la primera ocurrencia.
+  not_when: >
+    No uses split(sep) si sep puede aparecer múltiples veces y solo quieres 2 partes
+    (usa partition o split(sep, 1)).
+  syntax: |
+    words = s.split()              # whitespace, ignora múltiples espacios
+    parts = s.split(sep, maxsplit=1)  # máximo 1 división
+  my_example: |
+    "  hola   mundo  ".split()     # ['hola', 'mundo'] — no ['', 'hola', ...]
+    "a:b:c".split(":", 1)          # ['a', 'b:c']
+    "a:b:c".split(":")             # ['a', 'b', 'c']
+  related: [py_str_partition]
+
+- id: py_str_translate
+  language: python
+  symbol: str.translate
+  category: strings
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Reemplazar o eliminar caracteres individuales de forma eficiente.
+    Eliminar puntuación, traducir dígitos, normalizar caracteres especiales.
+    Más eficiente que múltiples replace() encadenados.
+  not_when: >
+    No uses para reemplazar substrings de más de un carácter (usa replace o re.sub).
+  syntax: |
+    table = str.maketrans(from_chars, to_chars, delete_chars)
+    result = s.translate(table)
+  my_example: |
+    # Eliminar puntuación
+    import string
+    table = str.maketrans('', '', string.punctuation)
+    "hello, world!".translate(table)  # "hello world"
+
+    # Cambiar caracteres
+    table = str.maketrans('aeiou', '12345')
+    "hello".translate(table)  # "h2ll4"
+  related: [py_re_sub, py_str_casefold]
+
+- id: py_re_sub
+  language: python
+  symbol: re.sub
+  import: re
+  category: regex
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Reemplazar texto que coincide con un patrón regex.
+    El reemplazo puede ser un string (con backreferences \1) o una función.
+  not_when: >
+    No uses si el patrón es un string literal (usa str.replace, es más rápido).
+    No uses si solo quieres encontrar, no reemplazar (usa re.search o re.findall).
+  syntax: |
+    import re
+    result = re.sub(pattern, replacement, text, count=0)
+    # con función:
+    result = re.sub(pattern, lambda m: m.group().upper(), text)
+  my_example: |
+    import re
+    # Normalizar espacios
+    re.sub(r'\s+', ' ', "hola   mundo\n")  # "hola mundo\n"
+
+    # Backreference: envolver matches en tags
+    re.sub(r'(\d+)', r'<b>\1</b>', "hay 3 items")
+    # "hay <b>3</b> items"
+
+    # Con función: capitalizar cada palabra
+    re.sub(r'\b\w+', lambda m: m.group().capitalize(), "hola mundo")
+  related: [py_re_findall, py_re_compile, py_str_translate]
+
+- id: py_re_findall
+  language: python
+  symbol: re.findall
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Extraer todas las ocurrencias de un patrón como lista de strings.
+    Si el patrón tiene grupos de captura, retorna lista de tuplas con los grupos.
+  not_when: >
+    No uses si necesitas la posición (índice) de cada match (usa re.finditer).
+    No uses si solo necesitas saber si existe al menos un match (usa re.search).
+  syntax: |
+    import re
+    matches = re.findall(pattern, text)
+    # con grupos: lista de tuplas
+    pairs = re.findall(r'(\w+)=(\w+)', text)
+  my_example: |
+    import re
+    re.findall(r'\d+', "abc123def456")      # ['123', '456']
+    re.findall(r'\b\w{4}\b', "hola mundo")  # ['hola']
+
+    # Con grupos de captura
+    re.findall(r'(\w+)@(\w+)', "a@b c@d")   # [('a','b'), ('c','d')]
+  related: [py_re_sub, py_re_compile, py_re_finditer]
+
+- id: py_re_finditer
+  language: python
+  symbol: re.finditer
+  import: re
+  category: regex
+  tags:
+    op: [filter, iterar]
+    domain: [strings, iteradores]
+    properties: [lazy]
+    intent: [reducir]
+  when: >
+    Iterar sobre todas las coincidencias con acceso a posición (start/end) y grupos.
+    Versión lazy de findall: no crea lista, útil en textos grandes.
+  not_when: >
+    No uses si solo necesitas los textos capturados (usa re.findall, más conciso).
+  syntax: |
+    import re
+    for m in re.finditer(pattern, text):
+        print(m.group(), m.start(), m.end())
+  my_example: |
+    import re
+    for m in re.finditer(r'\d+', "abc123def456"):
+        print(f"'{m.group()}' en posición {m.start()}-{m.end()}")
+    # '123' en posición 3-6
+    # '456' en posición 9-12
+  related: [py_re_findall, py_re_compile]
+
+- id: py_re_compile
+  language: python
+  symbol: re.compile
+  import: re
+  category: regex
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [compiletime, eager]
+    intent: [transformar]
+  when: >
+    Compilar un patrón regex que se usará múltiples veces en un loop o función.
+    Evita recompilar el patrón en cada llamada a re.search/findall.
+  not_when: >
+    No uses para patrones que se usan una sola vez (las funciones del módulo re cachean automáticamente).
+  syntax: |
+    import re
+    pattern = re.compile(r'\d+', re.IGNORECASE)
+    pattern.findall(text)
+    pattern.sub(repl, text)
+    pattern.search(text)
+  my_example: |
+    import re
+    EMAIL = re.compile(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}')
+
+    def extract_emails(texts):
+        return [EMAIL.findall(t) for t in texts]
+  related: [py_re_findall, py_re_sub]
+
+- id: py_str_normalize
+  language: python
+  symbol: unicodedata.normalize
+  import: unicodedata
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings]
+    properties: [eager]
+    intent: [convertir]
+  when: >
+    Eliminar acentos/diacríticos de un string para comparación o indexación.
+    Normalizar caracteres Unicode compuestos (é → e + ́) para procesarlos.
+  not_when: >
+    No uses si necesitas preservar los acentos para display o escritura.
+  syntax: |
+    import unicodedata
+    def strip_accents(s):
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', s)
+            if unicodedata.category(c) != 'Mn'
+        )
+  my_example: |
+    import unicodedata
+
+    def strip_accents(s):
+        return ''.join(
+            c for c in unicodedata.normalize('NFD', s)
+            if unicodedata.category(c) != 'Mn'
+        )
+
+    strip_accents("café résumé")  # "cafe resume"
+    strip_accents("niño")         # "nino"
+  related: [py_str_casefold]
+
+- id: py_str_zfill
+  language: python
+  symbol: str.zfill
+  category: strings
+  tags:
+    op: [map]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Rellenar un número (como string) con ceros a la izquierda hasta un ancho dado.
+    IDs con longitud fija, timestamps, códigos de formato.
+  not_when: >
+    No uses para alineación general (usa ljust/rjust/center).
+    Para números con f-strings usa f"{n:05d}" que es más legible.
+  syntax: |
+    s.zfill(width)
+    # equivalente con f-string: f"{n:0{width}d}"
+  my_example: |
+    "42".zfill(5)     # "00042"
+    "3.14".zfill(7)   # "0003.14"
+    "-42".zfill(5)    # "-0042"  — preserva el signo
+
+    # alternativa con f-string:
+    f"{42:05d}"       # "00042"
+  related: []

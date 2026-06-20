@@ -1,0 +1,85 @@
+- id: py_functools_lru_cache
+  language: python
+  symbol: functools.lru_cache
+  import: functools
+  category: funciones
+  tags:
+    op: [componer]
+    domain: [funciones]
+    properties: [eager]
+    intent: [memoizar]
+  when: >
+    Cachear resultados de una función pura para evitar recomputación.
+    Especialmente útil en recursión (fibonacci, rutas en grafo).
+  not_when: >
+    No uses si la función tiene efectos secundarios.
+    No uses si los argumentos no son hasheables (listas, dicts).
+    No uses si el espacio de entradas es enorme sin límite de cache (usa maxsize=N).
+  syntax: |
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)  # None = cache ilimitado
+    def fn(arg):
+        ...
+  my_example: |
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)
+    def fib(n):
+        if n < 2:
+            return n
+        return fib(n-1) + fib(n-2)
+
+    print(fib(100))  # instantáneo
+    print(fib.cache_info())  # CacheInfo(hits=98, misses=101, ...)
+  related: [py_functools_wraps, py_functools_partial]
+
+- id: py_functools_wraps
+  language: python
+  symbol: functools.wraps
+  import: functools
+  category: funciones
+  tags:
+    op: [componer]
+    domain: [funciones]
+    properties: [compiletime]
+    intent: [decorar]
+  when: >
+    Preservar __name__, __doc__ y otros metadatos de la función original al escribir un decorador.
+    Sin esto, todas las funciones decoradas tienen nombre "wrapper".
+  not_when: >
+    No necesitas esto si no estás escribiendo un decorador.
+  syntax: |
+    from functools import wraps
+
+    def my_decorator(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            # pre
+            result = fn(*args, **kwargs)
+            # post
+            return result
+        return wrapper
+  my_example: |
+    from functools import wraps
+    import time
+
+    def timer(fn):
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            result = fn(*args, **kwargs)
+            elapsed = time.perf_counter() - start
+            print(f"{fn.__name__} took {elapsed:.3f}s")
+            return result
+        return wrapper
+
+    @timer
+    def compute():
+        """Computes something important."""
+        return sum(range(10**6))
+
+    compute()
+    print(compute.__name__)  # "compute", no "wrapper"
+    print(compute.__doc__)   # "Computes something important."
+  related: [py_functools_lru_cache]

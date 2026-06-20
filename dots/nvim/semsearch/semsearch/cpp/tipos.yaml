@@ -1,0 +1,177 @@
+- id: cpp_static_cast
+  language: cpp
+  symbol: static_cast
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime, seguro]
+    intent: [convertir]
+  when: >
+    Conversión entre tipos relacionados verificable en tiempo de compilación.
+    Subir o bajar en jerarquía de clases cuando el tipo destino es conocido.
+    Conversiones numéricas explícitas (double → int, int → enum).
+  not_when: >
+    No uses cuando necesites verificación en runtime (usa dynamic_cast).
+    No uses para reinterpretar bits sin relación semántica (usa reinterpret_cast).
+  syntax: |
+    static_cast<TargetType>(expression)
+  alt:
+    - "(TargetType) expression  // C-style cast, evitar en C++ moderno"
+  my_example: |
+    double x = 3.14;
+    int n = static_cast<int>(x);  // 3, trunca hacia cero
+
+    // En jerarquía de clases:
+    Base* b = new Derived();
+    Derived* d = static_cast<Derived*>(b);  // seguro si sabemos el tipo real
+  related: [cpp_dynamic_cast, cpp_reinterpret_cast, cpp_bit_cast]
+  notes: >
+    static_cast es la opción default para cualquier conversión no-bit.
+    Si static_cast no compila, es señal de que el cast es semánticamente incorrecto.
+
+- id: cpp_dynamic_cast
+  language: cpp
+  symbol: dynamic_cast
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [runtime]
+    intent: [convertir]
+  when: >
+    Downcast en jerarquía polimórfica con verificación en runtime.
+    Cuando el tipo real del objeto no es conocido en compilación (RTTI necesario).
+  not_when: >
+    No uses si la jerarquía no es polimórfica (sin virtual functions).
+    No uses si el tipo es conocido en compilación (static_cast es más eficiente).
+  syntax: |
+    // Puntero: retorna nullptr si falla
+    Derived* d = dynamic_cast<Derived*>(base_ptr);
+    if (d) { /* cast exitoso */ }
+
+    // Referencia: lanza std::bad_cast si falla
+    Derived& d = dynamic_cast<Derived&>(base_ref);
+  my_example: |
+    struct Shape { virtual ~Shape() = default; };
+    struct Circle : Shape { float radius; };
+    struct Square : Shape { float side; };
+
+    void process(Shape* s) {
+        if (auto* c = dynamic_cast<Circle*>(s)) {
+            // es un círculo
+            use(c->radius);
+        }
+    }
+  related: [cpp_static_cast, cpp_reinterpret_cast]
+
+- id: cpp_reinterpret_cast
+  language: cpp
+  symbol: reinterpret_cast
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime, unsafe]
+    intent: [convertir]
+  when: >
+    Reinterpretar el patrón de bits de un tipo como otro tipo no relacionado.
+    Serialización de bajo nivel, interfaz con hardware/redes, interop con C.
+  not_when: >
+    No uses cuando haya una alternativa type-safe.
+    No uses para conversiones numéricas (usa static_cast).
+    Evitar en código portable: puede violar strict aliasing rules.
+  syntax: |
+    reinterpret_cast<TargetType*>(ptr)
+  my_example: |
+    // Leer bytes de un float como int (para bit manipulation)
+    float f = 3.14f;
+    uint32_t bits = *reinterpret_cast<uint32_t*>(&f);
+    // Nota: std::bit_cast es preferible en C++20
+  related: [cpp_static_cast, cpp_bit_cast]
+
+- id: cpp_bit_cast
+  language: cpp
+  symbol: std::bit_cast
+  import: <bit>
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime, seguro]
+    intent: [convertir]
+  when: >
+    Reinterpretar bits de un tipo como otro del mismo tamaño. C++20.
+    Alternativa segura y definida a reinterpret_cast para type-punning.
+  not_when: >
+    No disponible antes de C++20.
+    No uses si los tipos tienen tamaños distintos.
+  syntax: |
+    #include <bit>
+    auto result = std::bit_cast<TargetType>(source);
+  my_example: |
+    #include <bit>
+    float f = 3.14f;
+    uint32_t bits = std::bit_cast<uint32_t>(f);
+    // comportamiento bien definido, a diferencia de reinterpret_cast
+  related: [cpp_reinterpret_cast, cpp_static_cast]
+
+- id: cpp_is_same_v
+  language: cpp
+  symbol: std::is_same_v
+  import: <type_traits>
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime]
+    intent: [convertir]
+  when: >
+    Verificar en tiempo de compilación si dos tipos son exactamente iguales.
+    En templates para especialización condicional con if constexpr.
+  not_when: >
+    No compara tipos ignorando const/volatile (usa is_same_v<std::remove_cv_t<T>, U>).
+  syntax: |
+    #include <type_traits>
+    if constexpr (std::is_same_v<T, int>) { /* ... */ }
+    static_assert(std::is_same_v<T, Expected>);
+  my_example: |
+    template<typename T>
+    void process(T val) {
+        if constexpr (std::is_same_v<T, std::string>) {
+            std::cout << "string: " << val << "\n";
+        } else if constexpr (std::is_same_v<T, int>) {
+            std::cout << "int: " << val << "\n";
+        }
+    }
+  related: [cpp_decay_t, cpp_static_cast]
+
+- id: cpp_decay_t
+  language: cpp
+  symbol: std::decay_t
+  import: <type_traits>
+  category: tipos
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime]
+    intent: [convertir]
+  when: >
+    Eliminar referencias, const/volatile y hacer array/function decay en un tipo.
+    Obtener el tipo "crudo" que se almacenaría en una variable por valor.
+    Necesario para comparar tipos en templates con parámetros universales (T&&).
+  not_when: >
+    No uses si quieres preservar referencias o qualifiers intencionalmente.
+  syntax: |
+    #include <type_traits>
+    using Bare = std::decay_t<T>;
+  my_example: |
+    template<typename T>
+    void store(T&& val) {
+        // T podría ser int&, const int&, int&&
+        // decay_t<T> siempre es int
+        using Stored = std::decay_t<T>;
+        static_assert(std::is_same_v<Stored, int>);
+        Stored copy = std::forward<T>(val);
+    }
+  related: [cpp_is_same_v, cpp_static_cast]

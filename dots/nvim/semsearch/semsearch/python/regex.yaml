@@ -1,0 +1,280 @@
+- id: py_re_search_vs_match
+  language: python
+  symbol: re.search
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Verificar si un patrón existe en cualquier parte del texto.
+    Retorna un Match object (truthy) o None. Acceder al match con .group().
+  not_when: >
+    No uses re.match: solo coincide al inicio del string, confunde.
+    No uses si necesitas todas las coincidencias (usa re.findall o re.finditer).
+    No uses si necesitas validar el string completo (usa re.fullmatch).
+  syntax: |
+    m = re.search(pattern, text)
+    if m:
+        print(m.group())      # texto completo que coincidió
+        print(m.group(1))     # primer grupo capturado
+        print(m.start(), m.end())  # posiciones
+  my_example: |
+    import re
+    m = re.search(r'\d{4}-\d{2}-\d{2}', "fecha: 2024-01-15 texto")
+    if m:
+        print(m.group())   # "2024-01-15"
+        print(m.start())   # 7
+
+    # re.match solo busca al inicio — evitar confusiones:
+    re.match(r'\d+', "abc123")   # None  (no hay dígito al inicio)
+    re.search(r'\d+', "abc123")  # Match (encuentra el 123 en medio)
+  related: [py_re_fullmatch, py_re_findall, py_re_compile]
+
+- id: py_re_fullmatch
+  language: python
+  symbol: re.fullmatch
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Validar que un string completo cumple un formato: email, fecha, código postal, etc.
+    El patrón debe cubrir el string entero — equivale a anclar con ^ y $.
+  not_when: >
+    No uses si el patrón está dentro de un texto más largo (usa re.search).
+    No confundir con re.match: match solo ancla al inicio, fullmatch ancla en ambos extremos.
+  syntax: |
+    if re.fullmatch(pattern, text):
+        # texto válido
+  my_example: |
+    import re
+    EMAIL = r'[\w.+-]+@[\w-]+\.[a-z]{2,}'
+    DATE  = r'\d{4}-\d{2}-\d{2}'
+    UUID  = r'[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}'
+
+    re.fullmatch(EMAIL, "user@example.com")   # Match
+    re.fullmatch(EMAIL, "user@example.com  ") # None  (espacio al final)
+    re.fullmatch(DATE,  "2024-01-15")          # Match
+    re.fullmatch(DATE,  "not-a-date")          # None
+  related: [py_re_search_vs_match, py_re_compile]
+
+- id: py_re_split
+  language: python
+  symbol: re.split
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [particionar]
+  when: >
+    Dividir un string por un separador que es un patrón regex, no un literal.
+    Separar por múltiples delimitadores, whitespace variable, o separadores con contexto.
+    Si el patrón tiene grupos de captura, los separadores también aparecen en el resultado.
+  not_when: >
+    No uses si el separador es un string fijo (usa str.split, más rápido y claro).
+  syntax: |
+    import re
+    parts = re.split(pattern, text)
+    parts = re.split(pattern, text, maxsplit=2)
+    # con grupo capturado: separadores incluidos en resultado
+    parts = re.split(r'([,;])', text)
+  my_example: |
+    import re
+    # Dividir por coma O punto y coma OR espacio
+    re.split(r'[,;\s]+', "a, b;c  d")  # ['a', 'b', 'c', 'd']
+
+    # Capturar el separador también:
+    re.split(r'([,;])', "a,b;c")  # ['a', ',', 'b', ';', 'c']
+
+    # Dividir en palabras con puntuación separada:
+    re.split(r'(\W+)', "hola, mundo!")  # ['hola', ', ', 'mundo', '!', '']
+  related: [py_re_findall, py_re_search_vs_match]
+
+- id: py_re_named_groups
+  language: python
+  symbol: re.compile
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Nombrar grupos de captura para acceder por nombre en vez de por índice.
+    Patrones con muchos grupos donde el índice sería confuso.
+    Los nombres se acceden con m.group('nombre') o m.groupdict().
+  not_when: >
+    No uses si el patrón es simple con 1-2 grupos (índices numéricos son más cortos).
+  syntax: |
+    pattern = re.compile(r'(?P<year>\d{4})-(?P<month>\d{2})-(?P<day>\d{2})')
+    m = pattern.search(text)
+    if m:
+        year  = m.group('year')
+        datos = m.groupdict()   # {'year': '2024', 'month': '01', 'day': '15'}
+  my_example: |
+    import re
+    LOG = re.compile(
+        r'(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) '
+        r'\[(?P<level>\w+)\] '
+        r'(?P<message>.+)'
+    )
+    m = LOG.search("2024-01-15 10:30:00 [ERROR] conexión rechazada")
+    if m:
+        print(m.group('level'))    # "ERROR"
+        print(m.groupdict())
+        # {'timestamp': '2024-01-15 10:30:00', 'level': 'ERROR', 'message': '...'}
+  related: [py_re_non_capturing, py_re_compile]
+
+- id: py_re_non_capturing
+  language: python
+  symbol: re.compile
+  import: re
+  category: regex
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [compiletime]
+    intent: [transformar]
+  when: >
+    Agrupar parte del patrón para aplicar cuantificadores sin crear un grupo de captura.
+    (?:...) agrupa sin capturar. Útil cuando quieres (a|b)+ sin que findall devuelva los grupos.
+  not_when: >
+    No uses si necesitas el contenido del grupo (usa captura normal (...)).
+  syntax: |
+    r'(?:patrón)'          # grupo sin captura
+    r'(?:http|https)://'   # agrupar alternativa sin capturar
+    r'(?:\d{3}-)?\d{7}'    # parte opcional sin capturar
+  my_example: |
+    import re
+    # Con captura: findall devuelve los grupos, no el match completo
+    re.findall(r'(https?)://(\w+)', "http://foo https://bar")
+    # [('http', 'foo'), ('https', 'bar')]  — tuplas
+
+    # Con no-captura: findall devuelve el match completo
+    re.findall(r'(?:https?)://\w+', "http://foo https://bar")
+    # ['http://foo', 'https://bar']  — strings completos
+  related: [py_re_named_groups, py_re_lookahead]
+
+- id: py_re_lookahead
+  language: python
+  symbol: re.compile
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [compiletime]
+    intent: [reducir]
+  when: >
+    Hacer match condicional sin consumir caracteres:
+    (?=...) lookahead positivo: el texto que sigue debe coincidir.
+    (?!...) lookahead negativo: el texto que sigue NO debe coincidir.
+    (?<=...) lookbehind positivo: el texto anterior debe coincidir.
+    (?<!...) lookbehind negativo: el texto anterior NO debe coincidir.
+  not_when: >
+    No uses lookbehind con patrones de longitud variable (no soportado en re estándar).
+    Si necesitas lookbehind variable usa el módulo regex de PyPI.
+  syntax: |
+    r'\w+(?=\s*=)'       # palabra seguida de = (sin consumir el =)
+    r'\w+(?!\s*=)'       # palabra NO seguida de =
+    r'(?<=@)\w+'         # palabra precedida por @ (sin consumir @)
+    r'(?<!\\)"'          # comilla no precedida por backslash
+  my_example: |
+    import re
+    # Extraer nombre de variable (antes del =)
+    re.findall(r'\w+(?=\s*=)', "x = 1, y=2, z = 3")
+    # ['x', 'y', 'z']
+
+    # Extraer dominio de email (después de @)
+    re.findall(r'(?<=@)[\w.]+', "a@foo.com b@bar.org")
+    # ['foo.com', 'bar.org']
+
+    # Precio sin el símbolo de moneda:
+    re.findall(r'(?<=\$)\d+\.?\d*', "cuesta $12.50 y $8")
+    # ['12.50', '8']
+  related: [py_re_non_capturing, py_re_named_groups]
+
+- id: py_re_flags
+  language: python
+  symbol: re.IGNORECASE
+  import: re
+  category: regex
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [compiletime]
+    intent: [transformar]
+  when: |
+    Modificar el comportamiento del motor regex:
+    re.I / IGNORECASE: case-insensitive.
+    re.M / MULTILINE: ^ y $ coinciden en cada línea, no solo al inicio/fin del string.
+    re.S / DOTALL: el punto . también coincide con \n.
+    re.X / VERBOSE: permite espacios y comentarios en el patrón para legibilidad.
+    Combinar flags con | : re.I | re.M.
+  not_when: >
+    No uses re.DOTALL si no quieres que el punto cruce líneas (comportamiento por defecto es suficiente).
+  syntax: |
+    re.search(pattern, text, re.I)
+    re.compile(pattern, re.I | re.M)
+    # inline dentro del patrón:
+    re.search(r'(?i)hola', text)   # equivale a re.I
+  my_example: |
+    import re
+    # IGNORECASE
+    re.findall(r'hola', "HOLA Hola hola", re.I)  # ['HOLA', 'Hola', 'hola']
+
+    # MULTILINE: ^ por línea
+    re.findall(r'^\w+', "foo\nbar\nbaz", re.M)   # ['foo', 'bar', 'baz']
+
+    # VERBOSE: patrón legible
+    EMAIL = re.compile(r'''
+        [\w.+-]+    # usuario
+        @           # arroba
+        [\w-]+      # dominio
+        \.          # punto
+        [a-z]{2,}   # TLD
+    ''', re.VERBOSE | re.IGNORECASE)
+  related: [py_re_compile, py_re_named_groups]
+
+- id: py_re_backreference
+  language: python
+  symbol: re.compile
+  import: re
+  category: regex
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [runtime]
+    intent: [reducir]
+  when: >
+    Verificar que el mismo texto aparece en dos lugares del patrón.
+    \1 referencia al grupo 1, \2 al grupo 2. Útil para detectar duplicados,
+    etiquetas HTML balanceadas, comillas pareadas.
+  not_when: >
+    No uses si los dos textos pueden ser distintos (usa grupos independientes).
+  syntax: |
+    r'(.)\1'              # carácter repetido dos veces ("aa", "bb")
+    r'<(\w+)>.*?</\1>'   # etiqueta HTML de apertura == cierre
+    r'(["\']).*?\1'       # string entre comillas pareadas
+  my_example: |
+    import re
+    # Detectar caracteres duplicados consecutivos
+    re.findall(r'(.)\1+', "aabbccddee")  # ['a', 'b', 'c', 'd', 'e']
+
+    # Comillas balanceadas (simple o doble)
+    re.findall(r'(["\'])([^"\']*)\1', '"hola" \'mundo\'')
+    # [('"', 'hola'), ("'", 'mundo')]
+
+    # En re.sub con referencia al grupo:
+    re.sub(r'(\w+) \1', r'\1', "the the cat cat")
+    # "the cat"  — elimina duplicados
+  related: [py_re_named_groups, py_re_non_capturing]

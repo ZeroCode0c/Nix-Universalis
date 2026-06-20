@@ -1,0 +1,208 @@
+- id: hs_map_fromList
+  language: haskell
+  symbol: fromList
+  import: Data.Map
+  category: map
+  tags:
+      op: [construir]
+  when: >
+      Construcción batch desde datos no estructurados.
+      Sobrescribe duplicados (último gana).
+  not_when: >
+      Pierde información en claves duplicadas.
+  syntax: |
+      fromList :: Ord k => [(k, v)] -> Map k v
+  my_example: |
+      import qualified Data.Map as Map
+
+      m = Map.fromList [("a",1),("b",2),("a",3)]
+      -- fromList [("a",3),("b",2)]
+
+- id: hs_map_fromListWith
+  language: haskell
+  symbol: fromListWith
+  import: Data.Map
+  category: map
+  tags:
+      op: [agregar]
+  when: >
+      Agregación por clave (reduceByKey).
+  not_when: >
+      Funciones no asociativas generan resultados no deterministas.
+  syntax: |
+      fromListWith :: Ord k => (v -> v -> v) -> [(k, v)] -> Map k v
+  my_example: |
+      import qualified Data.Map as Map
+
+      counts = Map.fromListWith (+) [("a",1),("b",1),("a",1)]
+      -- fromList [("a",2),("b",1)]
+
+- id: hs_map_insert
+  language: haskell
+  symbol: insert
+  import: Data.Map
+  category: map
+  tags:
+      op: [actualizar]
+  when: >
+      Actualización puntual.
+  not_when: >
+      No combina valores existentes.
+  syntax: |
+      insert :: Ord k => k -> v -> Map k v -> Map k v
+  my_example: |
+      import qualified Data.Map as Map
+
+      m = Map.insert "x" 10 Map.empty
+      -- fromList [("x",10)]
+
+- id: hs_map_insertWith
+  language: haskell
+  symbol: insertWith
+  import: Data.Map
+  category: map
+  tags:
+      op: [combinar]
+  when: >
+      Inserción con merge.
+  not_when: >
+      Dependencia del orden si la función no es conmutativa.
+  syntax: |
+      insertWith :: Ord k => (v -> v -> v) -> k -> v -> Map k v -> Map k v
+  my_example: |
+      import qualified Data.Map as Map
+
+      m = Map.insertWith (+) "a" 3 (Map.fromList [("a",5)])
+      -- fromList [("a",8)]
+
+- id: hs_map_lookup
+  language: haskell
+  symbol: lookup
+  import: Data.Map
+  category: map
+  tags:
+      op: [consulta]
+  when: >
+      Acceso seguro.
+  not_when: >
+      Requiere manejo de Maybe.
+  syntax: |
+      lookup :: Ord k => k -> Map k v -> Maybe v
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.lookup "a" (Map.fromList [("a",1)])
+      -- Just 1
+
+      Map.lookup "z" (Map.fromList [("a",1)])
+      -- Nothing
+
+- id: hs_map_member
+  language: haskell
+  symbol: member
+  import: Data.Map
+  category: map
+  tags:
+      op: [consulta]
+  when: >
+      Verificación de existencia.
+  not_when: >
+      Redundante si haces lookup.
+  syntax: |
+      member :: Ord k => k -> Map k v -> Bool
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.member "a" (Map.fromList [("a",1)])
+      -- True
+
+- id: hs_map_map
+  language: haskell
+  symbol: map
+  import: Data.Map
+  category: map
+  tags:
+      op: [functor]
+  when: >
+      Transformar valores preservando claves.
+  not_when: >
+      No modifica claves.
+  syntax: |
+      map :: (a -> b) -> Map k a -> Map k b
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.map (*2) (Map.fromList [(1,10),(2,20)])
+      -- fromList [(1,20),(2,40)]
+
+- id: hs_map_filter
+  language: haskell
+  symbol: filter
+  import: Data.Map
+  category: map
+  tags:
+      op: [filtrar]
+  when: >
+      Seleccionar subconjunto por valores.
+  not_when: >
+      No filtra por clave.
+  syntax: |
+      filter :: (a -> Bool) -> Map k a -> Map k a
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.filter (>10) (Map.fromList [(1,5),(2,20)])
+      -- fromList [(2,20)]
+
+- id: hs_map_toList
+  language: haskell
+  symbol: toList
+  import: Data.Map
+  category: map
+  tags:
+      op: [convertir]
+  when: >
+      Interoperabilidad con listas.
+  not_when: >
+      Conversión innecesaria si sigues en Map.
+  syntax: |
+      toList :: Map k v -> [(k, v)]
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.toList (Map.fromList [(1,2)])
+      -- [(1,2)]
+
+- id: hs_map_keys
+  language: haskell
+  symbol: keys
+  import: Data.Map
+  category: map
+  tags:
+      op: [proyectar]
+  when: >
+      Obtener dominio.
+  syntax: |
+      keys :: Map k v -> [k]
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.keys (Map.fromList [(1,"a"),(2,"b")])
+      -- [1,2]
+
+- id: hs_map_elems
+  language: haskell
+  symbol: elems
+  import: Data.Map
+  category: map
+  tags:
+      op: [proyectar]
+  when: >
+      Obtener valores.
+  syntax: |
+      elems :: Map k v -> [v]
+  my_example: |
+      import qualified Data.Map as Map
+
+      Map.elems (Map.fromList [(1,"a"),(2,"b")])
+      -- ["a","b"]

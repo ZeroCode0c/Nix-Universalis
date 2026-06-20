@@ -1,0 +1,341 @@
+- id: hs_conv_show
+  language: haskell
+  symbol: show
+  import: Prelude
+  category: conversion
+  tags:
+      op: [serializacion]
+      domain: [texto]
+      intent: [valor-a-string]
+  when: >
+      Convertir un valor representable a String usando la typeclass Show.
+  not_when: >
+      No usar para formatting complejo o interfaces humanas avanzadas.
+  syntax: |
+      show :: Show a => a -> String
+  my_example: |
+      show 123 -- "123"
+  related: [hs_conv_read]
+
+- id: hs_conv_read
+  language: haskell
+  symbol: read
+  import: Prelude
+  category: conversion
+  tags:
+      op: [parseo]
+      domain: [texto]
+      intent: [string-a-valor]
+  when: >
+      Parsear un String hacia un tipo con instancia Read.
+  not_when: >
+      No usar con input no confiable. Es parcial y puede lanzar excepciones.
+  syntax: |
+      read :: Read a => String -> a
+  my_example: |
+      read "123" :: Int -- 123
+  related: [hs_conv_show, hs_conv_readMaybe]
+
+- id: hs_conv_readMaybe
+  language: haskell
+  symbol: readMaybe
+  import: Text.Read
+  category: conversion
+  tags:
+      op: [parseo]
+      domain: [texto]
+      intent: [parseo-seguro]
+  when: >
+      Parsear texto evitando excepciones runtime.
+  not_when: >
+      No usar si necesitas mensajes detallados de error.
+  syntax: |
+      readMaybe :: Read a => String -> Maybe a
+  my_example: |
+      readMaybe "123" :: Maybe Int -- Just 123
+  related: [hs_conv_read]
+
+- id: hs_conv_fromIntegral
+  language: haskell
+  symbol: fromIntegral
+  import: Prelude
+  category: conversion
+  tags:
+      op: [conversion-numerica]
+      domain: [numeros]
+      intent: [integral-a-num]
+  when: >
+      Convertir tipos Integral hacia cualquier tipo Num compatible.
+  not_when: >
+      No usar para conversiones entre tipos fraccionales.
+  syntax: |
+      fromIntegral :: (Integral a, Num b) => a -> b
+  my_example: |
+      fromIntegral (length [1,2,3]) :: Double -- 3.0
+  related: [hs_conv_realToFrac]
+
+- id: hs_conv_realToFrac
+  language: haskell
+  symbol: realToFrac
+  import: Prelude
+  category: conversion
+  tags:
+      op: [conversion-numerica]
+      domain: [numeros]
+      intent: [real-a-fraccional]
+  when: >
+      Convertir entre tipos numéricos reales/fraccionales.
+  not_when: >
+      No usar para tipos puramente integrales.
+  syntax: |
+      realToFrac :: (Real a, Fractional b) => a -> b
+  my_example: |
+      realToFrac (3.14 :: Float) :: Double
+  related: [hs_conv_fromIntegral]
+
+- id: hs_conv_floor
+  language: haskell
+  symbol: floor
+  import: Prelude
+  category: conversion
+  tags:
+      op: [cuantizacion]
+      domain: [numeros]
+      intent: [redondeo-abajo]
+  when: >
+      Proyectar un número fraccional al entero inferior.
+  not_when: >
+      No usar si necesitas truncamiento hacia cero.
+  syntax: |
+      floor :: (RealFrac a, Integral b) => a -> b
+  my_example: |
+      floor 3.9 -- 3
+  related: [hs_conv_ceiling, hs_conv_truncate, hs_conv_round]
+
+- id: hs_conv_ceiling
+  language: haskell
+  symbol: ceiling
+  import: Prelude
+  category: conversion
+  tags:
+      op: [cuantizacion]
+      domain: [numeros]
+      intent: [redondeo-arriba]
+  when: >
+      Proyectar un número fraccional al entero superior.
+  not_when: >
+      No usar para aproximación estadística estándar.
+  syntax: |
+      ceiling :: (RealFrac a, Integral b) => a -> b
+  my_example: |
+      ceiling 3.1 -- 4
+  related: [hs_conv_floor, hs_conv_round]
+
+- id: hs_conv_round
+  language: haskell
+  symbol: round
+  import: Prelude
+  category: conversion
+  tags:
+      op: [cuantizacion]
+      domain: [numeros]
+      intent: [redondeo]
+  when: >
+      Redondear al entero más cercano.
+  not_when: >
+      No usar si necesitas dirección explícita de redondeo.
+  syntax: |
+      round :: (RealFrac a, Integral b) => a -> b
+  my_example: |
+      round 3.6 -- 4
+  related: [hs_conv_floor, hs_conv_ceiling]
+
+- id: hs_conv_truncate
+  language: haskell
+  symbol: truncate
+  import: Prelude
+  category: conversion
+  tags:
+      op: [cuantizacion]
+      domain: [numeros]
+      intent: [truncamiento]
+  when: >
+      Eliminar parte decimal truncando hacia cero.
+  not_when: >
+      No usar como sustituto matemático de floor.
+  syntax: |
+      truncate :: (RealFrac a, Integral b) => a -> b
+  my_example: |
+      truncate (-3.9) -- -3
+  related: [hs_conv_floor]
+
+- id: hs_conv_toInteger
+  language: haskell
+  symbol: toInteger
+  import: Prelude
+  category: conversion
+  tags:
+      op: [conversion-numerica]
+      domain: [numeros]
+      intent: [integral-a-integer]
+  when: >
+      Convertir cualquier tipo Integral a Integer arbitrariamente grande.
+  not_when: >
+      No usar si necesitas mantener tamaño fijo de máquina.
+  syntax: |
+      toInteger :: Integral a => a -> Integer
+  my_example: |
+      toInteger (5 :: Int) -- 5
+  related: [hs_conv_fromIntegral]
+
+- id: hs_conv_toRational
+  language: haskell
+  symbol: toRational
+  import: Prelude
+  category: conversion
+  tags:
+      op: [conversion-numerica]
+      domain: [numeros]
+      intent: [real-a-racional]
+  when: >
+      Convertir un valor Real a representación racional exacta.
+  not_when: >
+      No usar si necesitas eficiencia numérica flotante.
+  syntax: |
+      toRational :: Real a => a -> Rational
+  my_example: |
+      toRational 0.5 -- 1 % 2
+  related: [hs_conv_fromRational]
+
+- id: hs_conv_fromRational
+  language: haskell
+  symbol: fromRational
+  import: Prelude
+  category: conversion
+  tags:
+      op: [conversion-numerica]
+      domain: [numeros]
+      intent: [racional-a-num]
+  when: >
+      Construir valores Fractional desde Rational.
+  not_when: >
+      Generalmente no usar directamente salvo diseño numérico avanzado.
+  syntax: |
+      fromRational :: Fractional a => Rational -> a
+  my_example: |
+      fromRational (1 % 2) :: Double -- 0.5
+  related: [hs_conv_toRational]
+
+- id: hs_conv_chr
+  language: haskell
+  symbol: chr
+  import: Data.Char
+  category: conversion
+  tags:
+      op: [encoding]
+      domain: [char]
+      intent: [int-a-char]
+  when: >
+      Convertir código Unicode a Char.
+  not_when: >
+      No usar con enteros inválidos fuera de rango Unicode.
+  syntax: |
+      chr :: Int -> Char
+  my_example: |
+      chr 65 -- 'A'
+  related: [hs_conv_ord]
+
+- id: hs_conv_ord
+  language: haskell
+  symbol: ord
+  import: Data.Char
+  category: conversion
+  tags:
+      op: [encoding]
+      domain: [char]
+      intent: [char-a-int]
+  when: >
+      Obtener el código Unicode de un carácter.
+  not_when: >
+      No asumir compatibilidad ASCII estricta.
+  syntax: |
+      ord :: Char -> Int
+  my_example: |
+      ord 'A' -- 65
+  related: [hs_conv_chr]
+
+- id: hs_conv_pack
+  language: haskell
+  symbol: pack
+  import: Data.Text
+  category: conversion
+  tags:
+      op: [conversion-estructural]
+      domain: [texto]
+      intent: [string-a-text]
+  when: >
+      Convertir String lazy basado en listas a Text eficiente.
+  not_when: >
+      No usar si toda la pipeline ya usa String.
+  syntax: |
+      pack :: String -> Text
+  my_example: |
+      pack "hola"
+  related: [hs_conv_unpack]
+
+- id: hs_conv_unpack
+  language: haskell
+  symbol: unpack
+  import: Data.Text
+  category: conversion
+  tags:
+      op: [conversion-estructural]
+      domain: [texto]
+      intent: [text-a-string]
+  when: >
+      Convertir Text a String.
+  not_when: >
+      Evitar conversiones repetidas por costo de materialización.
+  syntax: |
+      unpack :: Text -> String
+  my_example: |
+      unpack (pack "hola") -- "hola"
+  related: [hs_conv_pack]
+
+- id: hs_conv_toList
+  language: haskell
+  symbol: toList
+  import: Data.Foldable
+  category: conversion
+  tags:
+      op: [conversion-estructural]
+      domain: [colecciones]
+      intent: [estructura-a-lista]
+  when: >
+      Materializar cualquier Foldable como lista.
+  not_when: >
+      No usar si quieres preservar estructura original.
+  syntax: |
+      toList :: Foldable t => t a -> [a]
+  my_example: |
+      toList (Just 5) -- [5]
+  related: [hs_conv_fromList]
+
+- id: hs_conv_fromList
+  language: haskell
+  symbol: fromList
+  import: Data.Set
+  category: conversion
+  tags:
+      op: [conversion-estructural]
+      domain: [colecciones]
+      intent: [lista-a-estructura]
+  when: >
+      Construir estructuras desde listas.
+  not_when: >
+      El comportamiento depende de la estructura destino.
+  syntax: |
+      fromList :: Ord a => [a] -> Set a
+  my_example: |
+      fromList [1,2,2,3]
+  related: [hs_conv_toList]

@@ -1,0 +1,203 @@
+- id: go_goroutine_wait
+  language: go
+  symbol: sync.WaitGroup
+  import: sync
+  category: concurrencia
+  tags:
+    op: [esperar, sincronizar]
+    domain: [goroutines]
+    properties: [blocking]
+    intent: [coordinar]
+  when: >
+    Esperar a que un número conocido de goroutines termine antes de continuar.
+  not_when: >
+    No uses si no sabes de antemano cuántas goroutines hay (usa canales).
+    No uses si necesitas propagar errores de las goroutines (usa errgroup).
+  syntax: |
+    var wg sync.WaitGroup
+    wg.Add(n)
+    go func() { defer wg.Done(); /* trabajo */ }()
+    wg.Wait()
+  my_example: |
+    var wg sync.WaitGroup
+    for _, url := range urls {
+        wg.Add(1)
+        go func(u string) {
+            defer wg.Done()
+            fetch(u)
+        }(url)
+    }
+    wg.Wait()
+  related: [go_errgroup, go_channel_done, go_context_cancel]
+
+- id: go_errgroup
+  language: go
+  symbol: errgroup.Group
+  import: golang.org/x/sync/errgroup
+  category: concurrencia
+  tags:
+    op: [esperar, sincronizar]
+    domain: [goroutines, errores]
+    properties: [blocking]
+    intent: [coordinar, propagar]
+  when: >
+    Esperar N goroutines y propagar el primer error que ocurra.
+    Reemplaza WaitGroup cuando las goroutines pueden fallar.
+  not_when: >
+    No uses si no necesitas propagación de errores (WaitGroup es suficiente).
+  syntax: |
+    g, ctx := errgroup.WithContext(context.Background())
+    g.Go(func() error {
+        // trabajo que puede fallar
+        return err
+    })
+    if err := g.Wait(); err != nil {
+        // maneja error
+    }
+  my_example: |
+    g, ctx := errgroup.WithContext(context.Background())
+    for _, url := range urls {
+        url := url
+        g.Go(func() error {
+            return fetch(ctx, url)
+        })
+    }
+    if err := g.Wait(); err != nil {
+        log.Fatal(err)
+    }
+  related: [go_goroutine_wait, go_context_cancel]
+
+- id: go_context_cancel
+  language: go
+  symbol: context.WithCancel
+  import: context
+  category: concurrencia
+  tags:
+    op: [cancelar, sincronizar]
+    domain: [goroutines, contexto]
+    properties: [nonblocking]
+    intent: [coordinar]
+  when: >
+    Cancelar cooperativamente goroutines hijas cuando ya no se necesita su resultado.
+  not_when: >
+    No uses para timeouts fijos (usa context.WithTimeout).
+    No uses si las goroutines no observan el contexto.
+  syntax: |
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+    go func(ctx context.Context) {
+        select {
+        case <-ctx.Done():
+            return
+        case result := <-work():
+            // usar result
+        }
+    }(ctx)
+  my_example: |
+    ctx, cancel := context.WithCancel(context.Background())
+    defer cancel()
+    go worker(ctx)
+    // cuando quieras parar:
+    cancel()
+  related: [go_context_timeout, go_errgroup]
+
+- id: go_context_timeout
+  language: go
+  symbol: context.WithTimeout
+  import: context
+  category: concurrencia
+  tags:
+    op: [cancelar, esperar]
+    domain: [goroutines, contexto]
+    properties: [blocking]
+    intent: [coordinar]
+  when: >
+    Limitar el tiempo máximo de una operación bloqueante (HTTP, DB, gRPC).
+  not_when: >
+    No uses si quieres cancelación manual (usa WithCancel).
+  syntax: |
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    result, err := doWork(ctx)
+  my_example: |
+    ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+    defer cancel()
+    resp, err := http.Get(ctx, url)
+    if errors.Is(err, context.DeadlineExceeded) {
+        // timeout
+    }
+  related: [go_context_cancel]
+
+- id: go_select_channels
+  language: go
+  symbol: select
+  category: concurrencia
+  tags:
+    op: [esperar, sincronizar]
+    domain: [canales, goroutines]
+    properties: [blocking]
+    intent: [coordinar]
+  when: >
+    Multiplexar sobre múltiples canales: recibir del primero que tenga dato.
+    Implementar timeout o operaciones no bloqueantes con default.
+  not_when: >
+    No uses para esperar solo un canal (usa receive directo).
+  syntax: |
+    select {
+    case msg := <-ch1:
+        // recibido de ch1
+    case msg := <-ch2:
+        // recibido de ch2
+    case <-ctx.Done():
+        // cancelado
+    default:
+        // no bloquear
+    }
+  my_example: |
+    for {
+        select {
+        case job := <-jobs:
+            process(job)
+        case <-done:
+            return
+        case <-time.After(1 * time.Second):
+            fmt.Println("timeout esperando job")
+        }
+    }
+  related: [go_context_cancel, go_channel_done]
+
+- id: go_channel_done
+  language: go
+  symbol: chan struct{}
+  category: concurrencia
+  tags:
+    op: [cancelar, sincronizar]
+    domain: [canales, goroutines]
+    properties: [nonblocking]
+    intent: [coordinar]
+  when: >
+    Canal de señalización de terminación: cerrar el canal notifica a todos los lectores.
+    Alternativa ligera a context cuando no necesitas propagación de valores.
+  not_when: >
+    No uses si necesitas pasar datos por el canal.
+    Prefiere context.WithCancel para código de producción.
+  syntax: |
+    done := make(chan struct{})
+    go func() {
+        defer close(done)
+        // trabajo
+    }()
+    <-done  // esperar cierre
+  my_example: |
+    done := make(chan struct{})
+    go func() {
+        doWork()
+        close(done)
+    }()
+    select {
+    case <-done:
+        fmt.Println("terminado")
+    case <-time.After(5 * time.Second):
+        fmt.Println("timeout")
+    }
+  related: [go_select_channels, go_context_cancel]

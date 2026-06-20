@@ -1,0 +1,154 @@
+- id: cpp_unique_ptr
+  language: cpp
+  symbol: std::unique_ptr
+  import: <memory>
+  category: memoria
+  tags:
+    op: [sincronizar]
+    domain: [tipos]
+    properties: [seguro, runtime]
+    intent: [coordinar]
+  when: >
+    Ownership exclusivo de un recurso heap. El recurso se destruye cuando el unique_ptr sale de scope.
+    Reemplaza new/delete en código moderno. Transferible con std::move, no copiable.
+  not_when: >
+    No uses si el recurso necesita ser compartido entre múltiples dueños (usa shared_ptr).
+    No uses para ownership en stack (usa objeto directo).
+  syntax: |
+    #include <memory>
+    auto ptr = std::make_unique<T>(args...);
+    ptr->method();
+    // transferir ownership:
+    auto other = std::move(ptr);  // ptr queda null
+  my_example: |
+    auto conn = std::make_unique<Connection>("localhost");
+    conn->open();
+    // se cierra automáticamente al salir del scope
+
+    // en función que retorna:
+    std::unique_ptr<Widget> create() {
+        return std::make_unique<Widget>(42);
+    }
+  related: [cpp_shared_ptr, cpp_move, cpp_forward]
+
+- id: cpp_shared_ptr
+  language: cpp
+  symbol: std::shared_ptr
+  import: <memory>
+  category: memoria
+  tags:
+    op: [sincronizar]
+    domain: [tipos]
+    properties: [seguro, runtime]
+    intent: [coordinar]
+  when: >
+    Ownership compartido: múltiples dueños, el recurso vive mientras haya al menos uno.
+    Grafo de objetos donde la propiedad no es lineal.
+  not_when: >
+    No uses cuando uno solo posee el recurso (unique_ptr es suficiente y más eficiente).
+    No uses en ciclos de referencias sin weak_ptr (causa memory leak).
+  syntax: |
+    #include <memory>
+    auto ptr = std::make_shared<T>(args...);
+    auto copy = ptr;  // ambos son dueños
+    // destruido cuando el último dueño sale de scope
+  my_example: |
+    auto cache = std::make_shared<Cache>();
+    auto worker1 = Worker(cache);
+    auto worker2 = Worker(cache);
+    // cache vive mientras worker1 o worker2 existan
+  related: [cpp_unique_ptr, cpp_weak_ptr]
+
+- id: cpp_weak_ptr
+  language: cpp
+  symbol: std::weak_ptr
+  import: <memory>
+  category: memoria
+  tags:
+    op: [sincronizar]
+    domain: [tipos]
+    properties: [seguro, runtime]
+    intent: [coordinar]
+  when: >
+    Observer no-owning de un shared_ptr: observar sin mantener vivo el objeto.
+    Romper ciclos de referencia entre shared_ptr que causarían memory leaks.
+  not_when: >
+    No uses cuando necesitas garantía de que el objeto existe (usa shared_ptr).
+  syntax: |
+    #include <memory>
+    std::weak_ptr<T> weak = shared;
+    if (auto locked = weak.lock()) {
+        // el objeto todavía existe
+        locked->method();
+    }
+  my_example: |
+    struct Node {
+        std::shared_ptr<Node> next;
+        std::weak_ptr<Node>   prev;  // evita ciclo con el nodo anterior
+    };
+
+    auto a = std::make_shared<Node>();
+    auto b = std::make_shared<Node>();
+    a->next = b;
+    b->prev = a;  // weak: no crea ciclo
+  related: [cpp_shared_ptr, cpp_unique_ptr]
+
+- id: cpp_move
+  language: cpp
+  symbol: std::move
+  import: <utility>
+  category: memoria
+  tags:
+    op: [cast]
+    domain: [tipos]
+    properties: [compiletime]
+    intent: [transformar]
+  when: >
+    Transferir ownership de un objeto a otro sin copiar.
+    Pasar objetos grandes (vector, string, unique_ptr) a funciones o al retornar.
+  not_when: >
+    No uses sobre variables que usarás después del move (quedan en estado válido pero indeterminado).
+    No uses en return de variables locales (el compilador aplica NRVO automáticamente).
+  syntax: |
+    #include <utility>
+    auto dest = std::move(source);  // source queda en estado moved-from
+    fn(std::move(obj));
+  my_example: |
+    std::vector<int> big(1'000'000, 0);
+
+    // Copia: O(n)
+    auto copy = big;
+
+    // Move: O(1), transfiere el buffer interno
+    auto moved = std::move(big);
+    // big.size() == 0 ahora
+  related: [cpp_forward, cpp_unique_ptr]
+
+- id: cpp_forward
+  language: cpp
+  symbol: std::forward
+  import: <utility>
+  category: memoria
+  tags:
+    op: [componer]
+    domain: [tipos, funciones]
+    properties: [compiletime]
+    intent: [transformar]
+  when: >
+    Perfect forwarding en templates con parámetros universales (T&&).
+    Preservar la categoría de valor (lvalue/rvalue) al pasar argumentos entre funciones.
+  not_when: >
+    No uses fuera de contexto de forwarding reference (T&&).
+    No uses en código no-template (usa std::move directamente).
+  syntax: |
+    template<typename T>
+    void wrapper(T&& arg) {
+        target(std::forward<T>(arg));
+    }
+  my_example: |
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make(Args&&... args) {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+    // std::make_unique hace exactamente esto internamente
+  related: [cpp_move, cpp_unique_ptr]

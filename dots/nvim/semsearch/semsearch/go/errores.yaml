@@ -1,0 +1,132 @@
+- id: go_error_wrap
+  language: go
+  symbol: fmt.Errorf
+  import: fmt
+  category: errores
+  tags:
+    op: [componer]
+    domain: [errores]
+    properties: [runtime]
+    intent: [propagar]
+  when: >
+    Envolver un error con contexto adicional para propagarlo hacia arriba.
+    El %w preserva el error original para inspección con errors.Is/errors.As.
+  not_when: >
+    No uses %w si no quieres exponer el error interno (usa %v en su lugar).
+    No uses para crear errores nuevos sin causa (usa errors.New).
+  syntax: |
+    if err != nil {
+        return fmt.Errorf("contexto de la operación: %w", err)
+    }
+  my_example: |
+    func readConfig(path string) (*Config, error) {
+        data, err := os.ReadFile(path)
+        if err != nil {
+            return nil, fmt.Errorf("readConfig %s: %w", path, err)
+        }
+        // ...
+    }
+  related: [go_errors_is, go_errors_as]
+
+- id: go_errors_is
+  language: go
+  symbol: errors.Is
+  import: errors
+  category: errores
+  tags:
+    op: [cast]
+    domain: [errores]
+    properties: [runtime]
+    intent: [convertir]
+  when: >
+    Comprobar si un error (posiblemente envuelto) es de un tipo/valor centinela específico.
+    Navega la cadena de Unwrap automáticamente.
+  not_when: >
+    No uses para comparar mensajes de error (compara valores centinela).
+    No uses si necesitas extraer el error concreto (usa errors.As).
+  syntax: |
+    if errors.Is(err, ErrNotFound) {
+        // manejar caso específico
+    }
+  my_example: |
+    var ErrNotFound = errors.New("not found")
+
+    func lookup(id string) error {
+        // ...
+        return fmt.Errorf("lookup %s: %w", id, ErrNotFound)
+    }
+
+    err := lookup("x")
+    if errors.Is(err, ErrNotFound) {
+        fmt.Println("no existe")
+    }
+  related: [go_errors_as, go_error_wrap]
+
+- id: go_errors_as
+  language: go
+  symbol: errors.As
+  import: errors
+  category: errores
+  tags:
+    op: [cast]
+    domain: [errores]
+    properties: [runtime]
+    intent: [convertir]
+  when: >
+    Extraer un error concreto de un tipo específico de una cadena de errores envueltos.
+    Útil cuando necesitas acceder a campos del error concreto.
+  not_when: >
+    No uses si solo necesitas verificar igualdad (usa errors.Is).
+  syntax: |
+    var myErr *MyError
+    if errors.As(err, &myErr) {
+        // usar myErr.Field
+    }
+  my_example: |
+    type ValidationError struct {
+        Field   string
+        Message string
+    }
+    func (e *ValidationError) Error() string {
+        return e.Field + ": " + e.Message
+    }
+
+    var ve *ValidationError
+    if errors.As(err, &ve) {
+        fmt.Printf("campo inválido: %s\n", ve.Field)
+    }
+  related: [go_errors_is, go_error_wrap]
+
+- id: go_defer_recover
+  language: go
+  symbol: recover
+  category: errores
+  tags:
+    op: [cancelar]
+    domain: [errores, goroutines]
+    properties: [runtime]
+    intent: [propagar]
+  when: >
+    Capturar un panic en una goroutine para evitar que mate el proceso.
+    Útil en servidores HTTP donde un panic en un handler no debe tumbar el servidor.
+  not_when: >
+    No uses recover como mecanismo de control de flujo normal.
+    Solo úsalo en el nivel más alto de una goroutine.
+  syntax: |
+    defer func() {
+        if r := recover(); r != nil {
+            // r contiene el valor del panic
+            err = fmt.Errorf("panic: %v", r)
+        }
+    }()
+  my_example: |
+    func safeExec(fn func()) (err error) {
+        defer func() {
+            if r := recover(); r != nil {
+                err = fmt.Errorf("recovered panic: %v\n%s", r, debug.Stack())
+            }
+        }()
+        fn()
+        return nil
+    }
+  related: [go_error_wrap]

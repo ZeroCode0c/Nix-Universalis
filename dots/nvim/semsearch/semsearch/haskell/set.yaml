@@ -1,0 +1,232 @@
+- id: hs_set_fromList
+  language: haskell
+  symbol: fromList
+  import: Data.Set
+  category: set
+  tags:
+      op: [construir]
+      domain: [set]
+  when: >
+      Construcción desde lista con eliminación implícita de duplicados.
+      Modelo: proyección a estructura de conjunto (idempotencia).
+      Complejidad O(n log n).
+  not_when: >
+      No usar si necesitas preservar orden o multiplicidad (multiset).
+  syntax: |
+      fromList :: Ord a => [a] -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.fromList [3,1,2,3,2]
+      -- fromList [1,2,3]
+
+- id: hs_set_union
+  language: haskell
+  symbol: union
+  import: Data.Set
+  category: set
+  tags:
+      op: [combinar]
+  when: >
+      Unión de conjuntos (∪).
+      Modelo algebraico: monoidal, idempotente.
+  not_when: >
+      No distingue multiplicidad (no es multiset).
+  syntax: |
+      union :: Ord a => Set a -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.union (Set.fromList [1,2]) (Set.fromList [2,3])
+      -- fromList [1,2,3]
+
+- id: hs_set_intersection
+  language: haskell
+  symbol: intersection
+  import: Data.Set
+  category: set
+  tags:
+      op: [intersectar]
+  when: >
+      Intersección (∩): elementos comunes.
+  not_when: >
+      No conserva orden ni duplicados.
+  syntax: |
+      intersection :: Ord a => Set a -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.intersection (Set.fromList [1,2,3]) (Set.fromList [2,3,4])
+      -- fromList [2,3]
+
+- id: hs_set_difference
+  language: haskell
+  symbol: difference
+  import: Data.Set
+  category: set
+  tags:
+      op: [restar]
+  when: >
+      Diferencia (A \\ B): elementos en A no presentes en B.
+  not_when: >
+      No simétrica → orden importa.
+  syntax: |
+      difference :: Ord a => Set a -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.difference (Set.fromList [1,2,3]) (Set.fromList [2])
+      -- fromList [1,3]
+
+- id: hs_set_member
+  language: haskell
+  symbol: member
+  import: Data.Set
+  category: set
+  tags:
+      op: [consulta]
+  when: >
+      Test de pertenencia O(log n).
+  not_when: >
+      Redundante si ya transformas el set.
+  syntax: |
+      member :: Ord a => a -> Set a -> Bool
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.member 2 (Set.fromList [1,2,3])
+      -- True
+
+- id: hs_set_insert
+  language: haskell
+  symbol: insert
+  import: Data.Set
+  category: set
+  tags:
+      op: [insertar]
+  when: >
+      Inserción idempotente (no duplica).
+  not_when: >
+      No tiene efecto si el elemento ya existe.
+  syntax: |
+      insert :: Ord a => a -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.insert 2 (Set.fromList [1,2,3])
+      -- fromList [1,2,3]
+
+- id: hs_set_delete
+  language: haskell
+  symbol: delete
+  import: Data.Set
+  category: set
+  tags:
+      op: [eliminar]
+  when: >
+      Eliminación segura.
+  not_when: >
+      No falla si el elemento no existe (no-op).
+  syntax: |
+      delete :: Ord a => a -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.delete 2 (Set.fromList [1,2,3])
+      -- fromList [1,3]
+
+- id: hs_set_isSubsetOf
+  language: haskell
+  symbol: isSubsetOf
+  import: Data.Set
+  category: set
+  tags:
+      op: [relacion]
+  when: >
+      Verificación de inclusión (⊆).
+  not_when: >
+      No distingue igualdad de subconjunto propio.
+  syntax: |
+      isSubsetOf :: Ord a => Set a -> Set a -> Bool
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.fromList [1,2] `Set.isSubsetOf` Set.fromList [1,2,3]
+      -- True
+
+- id: hs_set_isProperSubsetOf
+  language: haskell
+  symbol: isProperSubsetOf
+  import: Data.Set
+  category: set
+  tags:
+      op: [relacion]
+  when: >
+      Inclusión estricta (⊂).
+  not_when: >
+      Falla si ambos conjuntos son iguales.
+  syntax: |
+      isProperSubsetOf :: Ord a => Set a -> Set a -> Bool
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.fromList [1,2] `Set.isProperSubsetOf` Set.fromList [1,2,3]
+      -- True
+
+- id: hs_set_map
+  language: haskell
+  symbol: map
+  import: Data.Set
+  category: set
+  tags:
+      op: [transformar]
+  when: >
+      Transformación de elementos.
+      Puede colapsar valores → reducción implícita.
+  not_when: >
+      No preserva cardinalidad necesariamente.
+  syntax: |
+      map :: Ord b => (a -> b) -> Set a -> Set b
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.map (`mod` 3) (Set.fromList [1,2,3,4])
+      -- fromList [0,1,2]
+
+- id: hs_set_filter
+  language: haskell
+  symbol: filter
+  import: Data.Set
+  category: set
+  tags:
+      op: [filtrar]
+  when: >
+      Selección de subconjunto.
+  not_when: >
+      No cambia estructura, solo reduce.
+  syntax: |
+      filter :: (a -> Bool) -> Set a -> Set a
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.filter odd (Set.fromList [1,2,3,4])
+      -- fromList [1,3]
+
+- id: hs_set_toList
+  language: haskell
+  symbol: toList
+  import: Data.Set
+  category: set
+  tags:
+      op: [convertir]
+  when: >
+      Interoperabilidad con listas.
+  not_when: >
+      Pierde semántica de conjunto (unicidad implícita).
+  syntax: |
+      toList :: Set a -> [a]
+  my_example: |
+      import qualified Data.Set as Set
+
+      Set.toList (Set.fromList [3,1,2])
+      -- [1,2,3]

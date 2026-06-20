@@ -1,0 +1,319 @@
+- id: cpp_string_view
+  language: cpp
+  symbol: std::string_view
+  import: <string_view>
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings]
+    properties: [compiletime, seguro]
+    intent: [transformar]
+  when: >
+    Pasar un string a una función sin copiar ni tomar ownership.
+    Parámetro de función que acepta tanto std::string como literales como char*.
+    Ventana sobre una porción de un string existente (substr sin copia).
+  not_when: >
+    No uses si necesitas almacenar el string más allá del lifetime de la fuente.
+    No uses si necesitas modificar el contenido (es read-only).
+  syntax: |
+    #include <string_view>
+    void fn(std::string_view sv);  // acepta string, literal, char*
+    std::string_view sub = sv.substr(pos, len);  // sin copia
+  my_example: |
+    #include <string_view>
+
+    bool starts_with_http(std::string_view url) {
+        return url.substr(0, 4) == "http";
+    }
+
+    std::string s = "hello world";
+    starts_with_http(s);            // OK: sin copia
+    starts_with_http("http://...");  // OK: literal
+  related: [cpp_string_substr, cpp_string_find]
+
+- id: cpp_string_find
+  language: cpp
+  symbol: std::string::find
+  import: <string>
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [runtime]
+    intent: [reducir]
+  when: >
+    Encontrar la posición de un substring dentro de un string.
+    Siempre comparar el resultado con std::string::npos para verificar si encontró.
+  not_when: >
+    No uses si solo necesitas saber si existe (usa find() != npos, o C++23 contains()).
+  syntax: |
+    size_t pos = s.find(substring, start_pos);
+    if (pos != std::string::npos) {
+        // encontrado en pos
+    }
+    // buscar desde la derecha:
+    size_t pos = s.rfind(substring);
+  my_example: |
+    std::string s = "hello world hello";
+    size_t pos = s.find("hello");   // 0
+    size_t last = s.rfind("hello"); // 12
+    if (s.find("xyz") == std::string::npos) {
+        std::cout << "no encontrado\n";
+    }
+  related: [cpp_string_substr, cpp_string_view, cpp_string_npos]
+
+- id: cpp_string_npos
+  language: cpp
+  symbol: std::string::npos
+  import: <string>
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [compiletime]
+    intent: [reducir]
+  when: >
+    Valor centinela que retornan find(), rfind(), find_first_of() cuando no encuentran.
+    Es size_t(-1), el máximo valor de size_t. Siempre verificar contra él.
+  not_when: >
+    No uses como índice para acceder al string (es inválido).
+  syntax: |
+    if (s.find(sub) == std::string::npos) { /* no encontrado */ }
+  my_example: |
+    std::string csv = "a,b,,d";
+    size_t pos = csv.find(",");
+    while (pos != std::string::npos) {
+        std::cout << pos << "\n";  // 1, 3, 4
+        pos = csv.find(",", pos + 1);
+    }
+  related: [cpp_string_find]
+
+- id: cpp_string_substr
+  language: cpp
+  symbol: std::string::substr
+  import: <string>
+  category: strings
+  tags:
+    op: [filter]
+    domain: [strings]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Extraer una porción del string como nuevo string (con copia).
+    Combinar con find() para extraer entre delimitadores.
+  not_when: >
+    No uses si solo necesitas leer sin modificar (usa string_view::substr, sin copia).
+  syntax: |
+    std::string sub = s.substr(pos, len);  // len opcional: hasta el final
+  my_example: |
+    std::string s = "hello world";
+    s.substr(6);      // "world"
+    s.substr(0, 5);   // "hello"
+
+    // Extraer entre delimitadores:
+    size_t start = s.find('(') + 1;
+    size_t end   = s.find(')');
+    std::string inside = s.substr(start, end - start);
+  related: [cpp_string_find, cpp_string_view]
+
+- id: cpp_string_to_number
+  language: cpp
+  symbol: std::stoi
+  import: <string>
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings, tipos]
+    properties: [runtime]
+    intent: [convertir]
+  when: >
+    Convertir un string a número entero o flotante.
+    stoi→int, stol→long, stoll→long long, stod→double, stof→float.
+    Lanza std::invalid_argument si el string no es un número.
+  not_when: >
+    No uses en código crítico sin try/catch: lanza excepciones.
+    Prefiere std::from_chars (C++17) si necesitas parseo sin excepciones y alta performance.
+  syntax: |
+    #include <string>
+    int n    = std::stoi("42");
+    long l   = std::stol("1234567890");
+    double d = std::stod("3.14");
+    // con pos: cuántos chars se consumieron
+    size_t pos;
+    int n = std::stoi("42abc", &pos);  // n=42, pos=2
+  my_example: |
+    try {
+        int n = std::stoi("   -42");  // ignora espacios iniciales
+        std::cout << n;               // -42
+    } catch (const std::invalid_argument& e) {
+        std::cerr << "no es número\n";
+    } catch (const std::out_of_range& e) {
+        std::cerr << "overflow\n";
+    }
+  related: [cpp_to_string, cpp_from_chars]
+
+- id: cpp_to_string
+  language: cpp
+  symbol: std::to_string
+  import: <string>
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings, tipos]
+    properties: [eager]
+    intent: [convertir]
+  when: >
+    Convertir un número (int, long, float, double) a std::string.
+    Alternativa simple a std::ostringstream o sprintf.
+  not_when: >
+    No uses si necesitas control de formato (decimales, padding): usa std::format (C++20) o ostringstream.
+    Para floats, puede producir representaciones con muchos decimales.
+  syntax: |
+    #include <string>
+    std::string s = std::to_string(42);
+    std::string f = std::to_string(3.14);  // "3.140000"
+  my_example: |
+    int n = 255;
+    std::string s = std::to_string(n);  // "255"
+
+    // Si necesitas formato:
+    std::string hex = std::format("{:#x}", n);  // "0xff"  (C++20)
+  related: [cpp_string_to_number, cpp_format, cpp_stringstream]
+
+- id: cpp_stringstream
+  language: cpp
+  symbol: std::stringstream
+  import: <sstream>
+  category: strings
+  tags:
+    op: [componer, cast]
+    domain: [strings]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    Construir un string concatenando valores de distintos tipos con << .
+    Parsear un string extrayendo valores con >> (splitting por whitespace).
+    Alternativa a to_string para múltiples valores con formato.
+  not_when: >
+    No uses en C++20+: std::format es más legible para construcción con formato.
+    No uses en loops críticos de performance: tiene overhead de allocación.
+  syntax: |
+    #include <sstream>
+    std::ostringstream oss;
+    oss << valor1 << " " << valor2;
+    std::string result = oss.str();
+
+    // parsear:
+    std::istringstream iss(text);
+    int n; double d;
+    iss >> n >> d;
+  my_example: |
+    // Construir
+    std::ostringstream oss;
+    oss << "user=" << username << "&age=" << age;
+    std::string query = oss.str();
+
+    // Parsear línea CSV
+    std::istringstream iss("Alice 30 3.14");
+    std::string name; int age; double score;
+    iss >> name >> age >> score;
+  related: [cpp_to_string, cpp_format, cpp_string_to_number]
+
+- id: cpp_format
+  language: cpp
+  symbol: std::format
+  import: <format>
+  category: strings
+  tags:
+    op: [componer]
+    domain: [strings]
+    properties: [compiletime, eager]
+    intent: [transformar]
+  when: >
+    Formatear strings con sustitución de variables al estilo Python f-strings. C++20.
+    Reemplaza sprintf, ostringstream y to_string para casos con formato.
+  not_when: >
+    No disponible antes de C++20. En C++17 usa fmt::format (librería externa).
+  syntax: |
+    #include <format>
+    std::string s = std::format("hola {}, tienes {} años", nombre, edad);
+    std::string hex = std::format("{:#010x}", valor);
+    std::string pad = std::format("{:>10}", texto);  // right-align width 10
+  my_example: |
+    #include <format>
+    std::string msg = std::format("Error {}: {}", code, description);
+    std::string table_row = std::format("{:<20} {:>8.2f}", name, price);
+    // "Alice                   12.50"
+  related: [cpp_stringstream, cpp_to_string]
+
+- id: cpp_getline
+  language: cpp
+  symbol: std::getline
+  import: <string>
+  category: strings
+  tags:
+    op: [iterar]
+    domain: [strings, io]
+    properties: [blocking, eager]
+    intent: [reducir]
+  when: >
+    Leer una línea completa (incluyendo espacios) desde un stream.
+    Dividir un string por un delimitador arbitrario usando istringstream.
+  not_when: >
+    No uses >> para leer strings con espacios: se detiene en whitespace.
+  syntax: |
+    #include <string>
+    std::string line;
+    while (std::getline(stream, line)) { /* procesar line */ }
+
+    // dividir por delimitador:
+    std::istringstream ss(text);
+    std::string token;
+    while (std::getline(ss, token, ',')) { /* token */ }
+  my_example: |
+    // Leer líneas de un archivo
+    std::ifstream f("data.txt");
+    std::string line;
+    while (std::getline(f, line)) {
+        process(line);
+    }
+
+    // Dividir CSV
+    std::istringstream ss("a,b,c,d");
+    std::string field;
+    while (std::getline(ss, field, ',')) {
+        std::cout << field << "\n";  // a b c d
+    }
+  related: [cpp_stringstream, cpp_string_find]
+
+- id: cpp_from_chars
+  language: cpp
+  symbol: std::from_chars
+  import: <charconv>
+  category: strings
+  tags:
+    op: [cast]
+    domain: [strings, tipos]
+    properties: [runtime, seguro]
+    intent: [convertir]
+  when: >
+    Parsear un número desde un string de forma rápida y sin excepciones. C++17.
+    Alta performance: sin locale, sin allocación, sin excepciones.
+    Preferible a stoi/stod en código crítico o que maneja entradas no confiables.
+  not_when: >
+    No soporta espacios iniciales (a diferencia de stoi).
+    No soporta notación científica en todas las implementaciones para floats.
+  syntax: |
+    #include <charconv>
+    int n;
+    auto [ptr, ec] = std::from_chars(str.data(), str.data() + str.size(), n);
+    if (ec == std::errc{}) { /* éxito */ }
+  my_example: |
+    #include <charconv>
+    std::string_view s = "12345";
+    int n;
+    auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), n);
+    if (ec != std::errc{}) {
+        // error de parseo: ec == errc::invalid_argument o errc::result_out_of_range
+    }
+  related: [cpp_string_to_number, cpp_string_view]

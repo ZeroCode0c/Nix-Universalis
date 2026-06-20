@@ -1,0 +1,20 @@
+- id: go_new_entry_1778196579
+  language: go
+  symbol: YourSymbol
+  import: ""
+  category: patrones
+  tags:
+    op: [map]
+    domain: [listas]
+    properties: [eager]
+    intent: [transformar]
+  when: >
+    When to use this.
+  not_when: >
+    When NOT to use this.
+  syntax: |
+    // syntax here
+  my_example: |
+    // example here
+  related: []
+  notes: ""

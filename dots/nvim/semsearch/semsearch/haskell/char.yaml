@@ -1,0 +1,406 @@
+- id: hs_char_isControl
+  language: haskell
+  symbol: isControl
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      domain: [unicode]
+      intent: [control_chars]
+  when: >
+      Detectar caracteres no imprimibles de control (p.ej. '\n', '\t').
+  syntax: |
+      isControl :: Char -> Bool
+  my_example: |
+      isControl '\n' -- True
+  related: [hs_char_isPrint]
+
+- id: hs_char_isSpace
+  language: haskell
+  symbol: isSpace
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [whitespace]
+  when: >
+      Detectar separadores de espacio (incluye Unicode).
+  syntax: |
+      isSpace :: Char -> Bool
+  my_example: |
+      isSpace ' ' -- True
+  related: []
+
+- id: hs_char_isLower
+  language: haskell
+  symbol: isLower
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [lowercase]
+  syntax: |
+      isLower :: Char -> Bool
+  my_example: |
+      isLower 'a' -- True
+  related: [hs_char_isUpper]
+
+- id: hs_char_isUpper
+  language: haskell
+  symbol: isUpper
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [uppercase]
+  syntax: |
+      isUpper :: Char -> Bool
+  my_example: |
+      isUpper 'A' -- True
+  related: [hs_char_isLower]
+
+- id: hs_char_isAlpha
+  language: haskell
+  symbol: isAlpha
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [letter]
+  when: >
+      Detectar letras (Unicode-aware).
+  syntax: |
+      isAlpha :: Char -> Bool
+  my_example: |
+      isAlpha 'ñ' -- True
+  related: [hs_char_isAlphaNum, hs_char_isLetter]
+
+- id: hs_char_isAlphaNum
+  language: haskell
+  symbol: isAlphaNum
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [alphanumeric]
+  when: >
+      Detectar letras o dígitos.
+      Equivalente a isAlpha || isDigit.
+  syntax: |
+      isAlphaNum :: Char -> Bool
+  my_example: |
+      isAlphaNum '3' -- True
+  related: [hs_char_isAlpha, hs_char_isDigit]
+
+- id: hs_char_isPrint
+  language: haskell
+  symbol: isPrint
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [printable]
+  when: >
+      Detectar caracteres imprimibles (excluye control).
+  syntax: |
+      isPrint :: Char -> Bool
+  my_example: |
+      isPrint 'A' -- True
+  related: [hs_char_isControl]
+
+- id: hs_char_isDigit
+  language: haskell
+  symbol: isDigit
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [decimal]
+  when: >
+      Detectar dígitos decimales ('0'..'9').
+  syntax: |
+      isDigit :: Char -> Bool
+  my_example: |
+      isDigit '7' -- True
+  related: [hs_char_isHexDigit, hs_char_isOctDigit]
+
+- id: hs_char_isOctDigit
+  language: haskell
+  symbol: isOctDigit
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [octal]
+  when: >
+      Detectar dígitos octales ('0'..'7').
+  syntax: |
+      isOctDigit :: Char -> Bool
+  my_example: |
+      isOctDigit '8' -- False
+  related: [hs_char_isDigit]
+
+- id: hs_char_isHexDigit
+  language: haskell
+  symbol: isHexDigit
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [hexadecimal]
+  when: >
+      Detectar dígitos hexadecimales.
+  syntax: |
+      isHexDigit :: Char -> Bool
+  my_example: |
+      isHexDigit 'F' -- True
+  related: [hs_char_isDigit]
+
+- id: hs_char_isLetter
+  language: haskell
+  symbol: isLetter
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [letter]
+  when: >
+      Detectar letras (similar a isAlpha, con semántica Unicode).
+  syntax: |
+      isLetter :: Char -> Bool
+  my_example: |
+      isLetter 'λ' -- True
+  related: [hs_char_isAlpha]
+
+- id: hs_char_isMark
+  language: haskell
+  symbol: isMark
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      domain: [unicode]
+      intent: [mark]
+  when: >
+      Detectar caracteres de marca Unicode (diacríticos combinantes).
+  syntax: |
+      isMark :: Char -> Bool
+
+- id: hs_char_isNumber
+  language: haskell
+  symbol: isNumber
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [numeric_unicode]
+  when: >
+      Detectar caracteres numéricos Unicode (más amplio que isDigit).
+  syntax: |
+      isNumber :: Char -> Bool
+
+- id: hs_char_isPunctuation
+  language: haskell
+  symbol: isPunctuation
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [punctuation]
+  syntax: |
+      isPunctuation :: Char -> Bool
+
+- id: hs_char_isSymbol
+  language: haskell
+  symbol: isSymbol
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [symbol]
+  when: >
+      Detectar símbolos (matemáticos, moneda, etc.).
+  syntax: |
+      isSymbol :: Char -> Bool
+
+- id: hs_char_isSeparator
+  language: haskell
+  symbol: isSeparator
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [separator]
+  syntax: |
+      isSeparator :: Char -> Bool
+
+- id: hs_char_isAscii
+  language: haskell
+  symbol: isAscii
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [ascii]
+  when: >
+      Detectar si pertenece al rango ASCII (0–127).
+  syntax: |
+      isAscii :: Char -> Bool
+
+- id: hs_char_isLatin1
+  language: haskell
+  symbol: isLatin1
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [latin1]
+  when: >
+      Detectar si pertenece al rango Latin-1 (0–255).
+  syntax: |
+      isLatin1 :: Char -> Bool
+
+- id: hs_char_isAsciiUpper
+  language: haskell
+  symbol: isAsciiUpper
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [ascii_upper]
+  syntax: |
+      isAsciiUpper :: Char -> Bool
+
+- id: hs_char_isAsciiLower
+  language: haskell
+  symbol: isAsciiLower
+  import: Data.Char
+  category: char
+  tags:
+      op: [predicado]
+      intent: [ascii_lower]
+  syntax: |
+      isAsciiLower :: Char -> Bool
+
+- id: hs_char_generalCategory
+  language: haskell
+  symbol: generalCategory
+  import: Data.Char
+  category: char
+  tags:
+      op: [clasificar]
+      domain: [unicode]
+      intent: [categoria]
+  when: >
+      Obtener categoría Unicode completa (ADT GeneralCategory).
+  syntax: |
+      generalCategory :: Char -> GeneralCategory
+
+- id: hs_char_toUpper
+  language: haskell
+  symbol: toUpper
+  import: Data.Char
+  category: char
+  tags:
+      op: [transformar]
+      intent: [uppercase]
+  syntax: |
+      toUpper :: Char -> Char
+
+- id: hs_char_toLower
+  language: haskell
+  symbol: toLower
+  import: Data.Char
+  category: char
+  tags:
+      op: [transformar]
+      intent: [lowercase]
+  syntax: |
+      toLower :: Char -> Char
+
+- id: hs_char_toTitle
+  language: haskell
+  symbol: toTitle
+  import: Data.Char
+  category: char
+  tags:
+      op: [transformar]
+      intent: [titlecase]
+  syntax: |
+      toTitle :: Char -> Char
+
+- id: hs_char_digitToInt
+  language: haskell
+  symbol: digitToInt
+  import: Data.Char
+  category: char
+  tags:
+      op: [convertir]
+      domain: [char, int]
+      intent: [parse]
+  syntax: |
+      digitToInt :: Char -> Int
+
+- id: hs_char_intToDigit
+  language: haskell
+  symbol: intToDigit
+  import: Data.Char
+  category: char
+  tags:
+      op: [convertir]
+      domain: [int, char]
+      intent: [serialize]
+  syntax: |
+      intToDigit :: Int -> Char
+
+- id: hs_char_ord
+  language: haskell
+  symbol: ord
+  import: Data.Char
+  category: char
+  tags:
+      op: [convertir]
+      intent: [encode]
+  syntax: |
+      ord :: Char -> Int
+
+- id: hs_char_chr
+  language: haskell
+  symbol: chr
+  import: Data.Char
+  category: char
+  tags:
+      op: [convertir]
+      intent: [decode]
+  syntax: |
+      chr :: Int -> Char
+
+- id: hs_char_encode
+  language: haskell
+  symbol: encode
+  import: Data.Char
+  category: char
+  tags:
+      op: [transformar]
+      domain: [string]
+      intent: [cifrar]
+  when: >
+      Ejemplo de cifrado por desplazamiento usando ord/chr.
+  syntax: |
+      encode :: Int -> String -> String
+  my_example: |
+      encode n = map (chr . (+n) . ord)
+
+- id: hs_char_decode
+  language: haskell
+  symbol: decode
+  import: Data.Char
+  category: char
+  tags:
+      op: [transformar]
+      domain: [string]
+      intent: [descifrar]
+  syntax: |
+      decode :: Int -> String -> String
+  my_example: |
+      decode n = encode (-n)

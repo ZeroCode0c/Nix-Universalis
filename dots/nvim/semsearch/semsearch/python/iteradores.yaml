@@ -1,0 +1,155 @@
+- id: py_itertools_chain
+  language: python
+  symbol: itertools.chain
+  import: itertools
+  category: iteradores
+  tags:
+    op: [componer, iterar]
+    domain: [iteradores, listas]
+    properties: [lazy]
+    intent: [transformar]
+  when: >
+    Concatenar múltiples iterables en uno solo sin crear una lista intermedia.
+    Procesar secuencias de distintas fuentes como si fueran una sola.
+  not_when: >
+    No uses si necesitas acceso aleatorio por índice (convierte a lista primero).
+    No uses si los iterables son finitos y pequeños (list + list es más claro).
+  syntax: |
+    import itertools
+    combined = itertools.chain(iter1, iter2, iter3)
+    # o desde un iterable de iterables:
+    combined = itertools.chain.from_iterable(list_of_iters)
+  my_example: |
+    from itertools import chain
+
+    headers = ['Content-Type', 'Authorization']
+    body_fields = ['name', 'email', 'age']
+
+    for field in chain(headers, body_fields):
+        print(field)
+    # sin crear lista intermedia
+  related: [py_itertools_islice, py_itertools_groupby]
+
+- id: py_itertools_islice
+  language: python
+  symbol: itertools.islice
+  import: itertools
+  category: iteradores
+  tags:
+    op: [filter, iterar]
+    domain: [iteradores]
+    properties: [lazy]
+    intent: [reducir]
+  when: >
+    Tomar los primeros N elementos de un iterador sin consumir el resto.
+    Paginar sobre un generador infinito.
+  not_when: >
+    No uses sobre listas o secuencias finitas (usa slicing [:n] directamente).
+  syntax: |
+    import itertools
+    first_n = itertools.islice(iterable, n)
+    # con start, stop, step:
+    sliced = itertools.islice(iterable, start, stop, step)
+  my_example: |
+    from itertools import islice, count
+
+    # Generador infinito de números pares
+    evens = (x for x in count() if x % 2 == 0)
+    first_10 = list(islice(evens, 10))
+    # [0, 2, 4, 6, 8, 10, 12, 14, 16, 18]
+  related: [py_itertools_chain, py_itertools_groupby]
+
+- id: py_itertools_groupby
+  language: python
+  symbol: itertools.groupby
+  import: itertools
+  category: iteradores
+  tags:
+    op: [agrupar, iterar]
+    domain: [iteradores, listas]
+    properties: [lazy, eager]
+    intent: [particionar]
+  when: >
+    Agrupar elementos consecutivos con la misma clave en un iterador.
+    Equivalente a SQL GROUP BY sobre datos ordenados.
+  not_when: >
+    No uses si los datos no están ordenados por la clave (agrupa solo consecutivos).
+    No uses para agrupación real sin orden previo (usa defaultdict).
+  syntax: |
+    from itertools import groupby
+    # los datos DEBEN estar ordenados por la clave
+    for key, group in groupby(sorted_data, key=lambda x: x.field):
+        items = list(group)
+  my_example: |
+    from itertools import groupby
+
+    events = [
+        {'type': 'click', 'ts': 1},
+        {'type': 'click', 'ts': 2},
+        {'type': 'view',  'ts': 3},
+        {'type': 'click', 'ts': 4},
+    ]
+    events.sort(key=lambda e: e['type'])
+    for event_type, group in groupby(events, key=lambda e: e['type']):
+        print(event_type, list(group))
+  related: [py_itertools_chain, py_functools_reduce]
+
+- id: py_functools_reduce
+  language: python
+  symbol: functools.reduce
+  import: functools
+  category: iteradores
+  tags:
+    op: [fold, reduce]
+    domain: [listas, iteradores]
+    properties: [eager]
+    intent: [reducir]
+  when: >
+    Acumular una secuencia en un único valor aplicando una función binaria.
+    Fold left sobre cualquier iterable.
+  not_when: >
+    No uses para sumas o productos simples (usa sum(), math.prod()).
+    No uses si hay un built-in específico (max, min, any, all).
+  syntax: |
+    from functools import reduce
+    result = reduce(lambda acc, x: acc + x, iterable, initial_value)
+  my_example: |
+    from functools import reduce
+
+    # Componer funciones: f(g(h(x)))
+    fns = [str.strip, str.lower, str.title]
+    pipeline = reduce(lambda f, g: lambda x: g(f(x)), fns)
+    result = pipeline("  HELLO WORLD  ")
+    # "Hello World"
+  related: [py_itertools_groupby, py_functools_partial]
+
+- id: py_functools_partial
+  language: python
+  symbol: functools.partial
+  import: functools
+  category: iteradores
+  tags:
+    op: [componer]
+    domain: [funciones]
+    properties: [lazy]
+    intent: [decorar]
+  when: >
+    Fijar algunos argumentos de una función creando una nueva función con menos parámetros.
+    Adaptar una función de N args para usarla donde se espera una de M < N args.
+  not_when: >
+    No uses si es más claro escribir un lambda o una función wrapper nombrada.
+  syntax: |
+    from functools import partial
+    new_fn = partial(original_fn, arg1=value1, arg2=value2)
+  my_example: |
+    from functools import partial
+
+    def power(base, exp):
+        return base ** exp
+
+    square = partial(power, exp=2)
+    cube   = partial(power, exp=3)
+
+    print(square(4))  # 16
+    print(cube(3))    # 27
+  related: [py_functools_reduce]
