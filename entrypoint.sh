@@ -42,6 +42,7 @@ selected_profiles="${NIX_UNIVERSALIS_PROFILES:-}"
 action="${NIX_UNIVERSALIS_ACTION:-switch}"
 yes="${NIX_UNIVERSALIS_YES:-0}"
 dry_run="${NIX_UNIVERSALIS_DRY_RUN:-0}"
+backup_extension="${NIX_UNIVERSALIS_BACKUP_EXTENSION:-}"
 all_profiles=0
 
 while [ "$#" -gt 0 ]; do
@@ -338,11 +339,15 @@ run_nix_action() {
       fi
       ;;
     switch)
-      cmd="NIX_CONFIG='extra-experimental-features = nix-command flakes' nix run 'path:$tmp_flake_dir#home-manager' -- switch --flake 'path:$tmp_flake_dir#activation'"
+      if [ -z "$backup_extension" ]; then
+        backup_extension="nix-universalis-backup-$(date +%Y%m%d%H%M%S)"
+      fi
+      cmd="NIX_CONFIG='extra-experimental-features = nix-command flakes' nix run 'path:$tmp_flake_dir#home-manager' -- switch -b '$backup_extension' --flake 'path:$tmp_flake_dir#activation'"
       if [ "$dry_run" = 1 ]; then
         log "$cmd"
       else
-        nix run "path:$tmp_flake_dir#home-manager" -- switch --flake "path:$tmp_flake_dir#activation"
+        log "Existing Home Manager target files will be backed up with extension: .$backup_extension"
+        nix run "path:$tmp_flake_dir#home-manager" -- switch -b "$backup_extension" --flake "path:$tmp_flake_dir#activation"
       fi
       ;;
   esac
