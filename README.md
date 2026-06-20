@@ -2,6 +2,9 @@
 
 Portable Home Manager graph for a universal developer core.
 
+Project scope, package inventory, priorities, and next steps are documented in
+[`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md).
+
 This repository is intentionally separate from `NixOS-Hyprland`. The first cut
 contains only priority 5 and priority 4 developer tools:
 
