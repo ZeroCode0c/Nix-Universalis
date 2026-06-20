@@ -238,6 +238,55 @@ EOF
   return 1
 }
 
+run_subgraph_fzf() {
+  command -v nix >/dev/null 2>&1 || return 1
+  [ -r /dev/tty ] || return 1
+  [ -w /dev/tty ] || return 1
+
+  manifest_file=$(mktemp "${TMPDIR:-/tmp}/nix-universalis-subgraphs.XXXXXX")
+  selection_file=$(mktemp "${TMPDIR:-/tmp}/nix-universalis-selection.XXXXXX")
+  subgraph_manifest > "$manifest_file"
+
+  preview_cmd='IFS="|" read -r name category packages path <<EOF
+{}
+EOF
+printf "Subgraph: %s\n" "$name"
+printf "Category: %s\n" "$category"
+printf "Module: %s\n\n" "$path"
+printf "Packages:\n"
+printf "%s\n" "$packages" | tr "," "\n" | sed "s/^ */- /"
+'
+
+  if nix shell nixpkgs#fzf -c sh -c '
+    fzf --multi \
+      --height=90% \
+      --border \
+      --layout=reverse \
+      --prompt="subgraphs> " \
+      --delimiter="|" \
+      --with-nth="1,2" \
+      --preview="$1" \
+      --preview-window="right:55%:wrap" \
+      --bind="start:select-all" \
+      --header="Tab toggles, arrows move, Enter accepts, Esc cancels" \
+      < "$2" > "$3"
+  ' sh "$preview_cmd" "$manifest_file" "$selection_file" </dev/tty >/dev/tty 2>/dev/tty
+  then
+    selected_subgraphs=$(
+      while IFS='|' read -r name _category _packages _path; do
+        [ -n "$name" ] && printf '%s ' "$name"
+      done < "$selection_file" | sed 's/[[:space:]]*$//'
+    )
+    rm -f "$manifest_file" "$selection_file"
+    return 0
+  fi
+
+  status=$?
+  rm -f "$manifest_file" "$selection_file"
+  [ "$status" = 130 ] && return 2
+  return "$status"
+}
+
 prompt_subgraphs() {
   if [ "$all_subgraphs" = 1 ]; then
     select_all_subgraphs
@@ -264,6 +313,20 @@ prompt_subgraphs() {
     log "No TTY detected; skipping optional subgraphs."
     return 0
   fi
+
+  if run_subgraph_fzf; then
+    return 0
+  else
+    fzf_status=$?
+    case "$fzf_status" in
+      2)
+        return 0
+        ;;
+    esac
+  fi
+
+  log "Subgraph TUI unavailable; falling back to numbered selection."
+  select_all_subgraphs
 
   while :; do
     log ""
@@ -548,10 +611,11 @@ run_nix_action() {
 
 prompt_username
 prompt_profiles
+validate_selection
+ensure_nix
 prompt_subgraphs
 validate_selection
 confirm_selection
-ensure_nix
 run_nix_action
 
 log ""

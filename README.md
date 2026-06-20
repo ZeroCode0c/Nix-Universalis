@@ -35,14 +35,19 @@ Entrypoint:
 ./entrypoint.sh --username alice --profile dev-core --all-subgraphs --switch
 ```
 
-When run interactively, the entrypoint shows a checkbox-style selector for
-optional subgraphs:
+When run interactively, the entrypoint first installs or loads Nix, then opens a
+subgraph selector powered by `fzf` from `nixpkgs`. Move with arrows, toggle with
+`Tab`, inspect the preview pane to see the exact packages each subgraph
+installs, and press `Enter` to continue to the final confirmation:
 
 - `cli-plus-git-tui`: `lazygit`
 - `cli-plus-network`: `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp`
 - `cli-plus-containers`: `distrobox`, `ctop`, `lazydocker`
 - `cli-plus-terminal-identity`: `fastfetch`, `onefetch`, `starship`
 - `cli-plus-disk-process`: `atop`, `glances`, `caligula`
+
+If the `fzf` TUI cannot run, the entrypoint falls back to a portable numbered
+selector.
 
 If Nix is missing, the entrypoint installs it with the official daemon installer:
 
