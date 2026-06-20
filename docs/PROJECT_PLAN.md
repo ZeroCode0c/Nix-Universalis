@@ -33,7 +33,7 @@ Hyprland completo; extrae solo el núcleo de desarrollo con baja entropía.
 | Shell workflow | `fzf`, `zoxide`, `zshnip` |
 | Editores | `neovim`, `micro` |
 | Multiplexor | `tmux` |
-| Git | `git`, `delta`, `lazygit` |
+| Git | `git`, `delta` |
 | Búsqueda/archivos | `ripgrep`, `fd`, `findutils`, `bat`, `bat-extras.batman`, `bat-extras.batpipe` |
 | HTTP/datos | `curl`, `wget`, `jq` |
 | Build base | `gcc`, `gnumake`, `cmake`, `openssl`, `bc` |
@@ -64,14 +64,16 @@ perfil de Home Manager al exportar `bin/ld`. Debe vivir en el subgrafo C/C++.
 ## Prioridad 3
 
 Estos paquetes son útiles, pero no deberían contaminar el `dev-core` mínimo.
-Conviene moverlos a `dev-core-plus` o a subgrafos opt-in.
+Viven como subgrafos opt-in bajo `graphs/subgraphs/cli-plus`, seleccionables
+desde el entrypoint.
 
-| Categoría | Paquetes |
-| --- | --- |
-| Network CLI | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
-| Containers CLI | `distrobox`, `ctop`, `lazydocker` |
-| Terminal identity | `fastfetch`, `onefetch`, `starship` |
-| Disk/proc extra | `atop`, `glances` |
+| Subgrafo | Categoría | Paquetes |
+| --- | --- | --- |
+| `cli-plus-git-tui` | Git TUI | `lazygit` |
+| `cli-plus-network` | Network CLI | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
+| `cli-plus-containers` | Containers CLI | `distrobox`, `ctop`, `lazydocker` |
+| `cli-plus-terminal-identity` | Terminal identity | `fastfetch`, `onefetch`, `starship` |
+| `cli-plus-disk-process` | Disk/proc extra | `atop`, `glances`, `caligula` |
 
 ## Prioridad 2
 
@@ -97,7 +99,7 @@ apps personales, etc.
 | Desktop/apps | `firefox`, `google-chrome`, `discord`, `telegram-desktop`, `proton-pass`, `proton-vpn`, `obs-studio`, `vlc`, `loupe`, `eog`, `baobab`, `gnome-system-monitor`, `mission-center`, `thunar`, `mousepad`, `file-roller`, `xarchiver`, `yad` |
 | Audio/media | `ffmpeg`, `mpv`, `yt-dlp`, `cava`, `ncmpcpp`, `mpd`, `mpc`, `pamixer`, `pavucontrol`, `playerctl` |
 | Theme/GTK/Qt | `gtk-engine-murrine`, `glib`, `gsettings-qt`, `kdePackages.qt6ct`, `kdePackages.qtwayland`, `kdePackages.qtstyleplugin-kvantum`, `libsForQt5.qtstyleplugin-kvantum`, `libsForQt5.qt5ct`, `libappindicator`, `libnotify`, `sweet`, `beauty-line-icon-theme` |
-| Hardware/sistema | `power-profiles-daemon`, `btrfs-progs`, `cpufrequtils`, `pciutils`, `nvtopPackages.full`, `v4l-utils`, `smartmontools`, `brightnessctl`, `lm_sensors`, `cyme`, `caligula`, `cpu-x`, `cpuid`, `inxi` |
+| Hardware/sistema | `power-profiles-daemon`, `btrfs-progs`, `cpufrequtils`, `pciutils`, `nvtopPackages.full`, `v4l-utils`, `smartmontools`, `brightnessctl`, `lm_sensors`, `cyme`, `cpu-x`, `cpuid`, `inxi` |
 | Virtualización/personal | `virt-viewer`, `libvirt`, `rclone`, `appimage-run`, `kdeconnect-kde`, `steam` |
 
 ## Subgrafos de lenguaje pendientes
@@ -163,11 +165,12 @@ nix build .#homeConfigurations.spaceinvaders.activationPackage
    - Separar config base de Neovim y plugins por lenguaje.
    - Evaluar si `semsearch` debe ser core o subgrafo de conocimiento/lenguaje.
 
-5. Crear `dev-core-plus`.
+5. Crear subgrafos `cli-plus`.
    - Network CLI.
    - Containers CLI.
    - Terminal identity.
    - Utilidades no esenciales pero muy útiles.
+   - Mantenerlos opt-in desde el entrypoint.
 
 6. Crear subgrafos por lenguaje.
    - `languages/nix`
@@ -189,7 +192,7 @@ nix build .#homeConfigurations.spaceinvaders.activationPackage
 8. Definir política de perfiles.
    - `dev-core`: P5 + P4.
    - `dev-core-minimal`: solo P5.
-   - `dev-core-plus`: P5 + P4 + P3.
+   - P3: subgrafos opt-in por categoría.
    - `full-dev`: core + lenguajes seleccionados.
 
 ## Riesgos conocidos

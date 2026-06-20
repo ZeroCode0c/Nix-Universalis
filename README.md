@@ -6,10 +6,11 @@ Project scope, package inventory, priorities, and next steps are documented in
 [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md).
 
 This repository is intentionally separate from `NixOS-Hyprland`. The first cut
-contains only priority 5 and priority 4 developer tools:
+enables priority 5 and priority 4 developer tools by default:
 
 - `graphs/dev-core/p5`: essential, portable dev core.
 - `graphs/dev-core/p4`: strong general-purpose core, still portable.
+- `graphs/subgraphs/cli-plus`: priority 3 opt-in TUI/CLI extras by category.
 - `profiles/home/dev-core.nix`: Home Manager entrypoint that activates the graph.
 - `dots/`: copied configuration data used by graph modules.
 
@@ -30,7 +31,18 @@ Entrypoint:
 ./entrypoint.sh
 ./entrypoint.sh --username alice --profile dev-core --build-only
 ./entrypoint.sh --username alice --profile dev-core --switch
+./entrypoint.sh --username alice --profile dev-core --subgraph cli-plus-git-tui --switch
+./entrypoint.sh --username alice --profile dev-core --all-subgraphs --switch
 ```
+
+When run interactively, the entrypoint shows a checkbox-style selector for
+optional subgraphs:
+
+- `cli-plus-git-tui`: `lazygit`
+- `cli-plus-network`: `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp`
+- `cli-plus-containers`: `distrobox`, `ctop`, `lazydocker`
+- `cli-plus-terminal-identity`: `fastfetch`, `onefetch`, `starship`
+- `cli-plus-disk-process`: `atop`, `glances`, `caligula`
 
 If Nix is missing, the entrypoint installs it with the official daemon installer:
 

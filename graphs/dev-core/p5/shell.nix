@@ -39,6 +39,7 @@ in {
       cls = "clear";
       _ = "sudo";
       lzg = "lazygit";
+      lzd = "lazydocker";
       port = "ss -tulnp | grep";
       portk = "sudo fuser -k";
     };

@@ -12,6 +12,8 @@ Options:
   -u, --username NAME       Target Home Manager username.
   -p, --profile NAME        Profile to enable. Can be repeated.
   -a, --all                 Enable all available profiles.
+  -s, --subgraph NAME       Optional subgraph to enable. Can be repeated.
+      --all-subgraphs       Enable all optional subgraphs.
       --build-only          Build/download the activation package without switching.
       --switch              Apply the selected Home Manager profile. Default action.
   -y, --yes                 Non-interactive confirmation.
@@ -21,6 +23,7 @@ Options:
 Examples:
   ./entrypoint.sh
   ./entrypoint.sh --username alice --profile dev-core --switch
+  ./entrypoint.sh --username alice --profile dev-core --subgraph cli-plus-git-tui --switch
   ./entrypoint.sh --username alice --profile dev-core --build-only
 EOF
 }
@@ -39,11 +42,13 @@ profiles_dir="$repo_dir/profiles/home"
 
 username="${NIX_UNIVERSALIS_USERNAME:-}"
 selected_profiles="${NIX_UNIVERSALIS_PROFILES:-}"
+selected_subgraphs="${NIX_UNIVERSALIS_SUBGRAPHS:-}"
 action="${NIX_UNIVERSALIS_ACTION:-switch}"
 yes="${NIX_UNIVERSALIS_YES:-0}"
 dry_run="${NIX_UNIVERSALIS_DRY_RUN:-0}"
 backup_extension="${NIX_UNIVERSALIS_BACKUP_EXTENSION:-}"
 all_profiles=0
+all_subgraphs=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -61,8 +66,21 @@ while [ "$#" -gt 0 ]; do
       fi
       shift 2
       ;;
+    -s | --subgraph)
+      [ "$#" -ge 2 ] || die "missing value for $1"
+      if [ -n "$selected_subgraphs" ]; then
+        selected_subgraphs="$selected_subgraphs $2"
+      else
+        selected_subgraphs="$2"
+      fi
+      shift 2
+      ;;
     -a | --all)
       all_profiles=1
+      shift
+      ;;
+    --all-subgraphs)
+      all_subgraphs=1
       shift
       ;;
     --build-only)
@@ -133,6 +151,166 @@ select_all_profiles() {
   done
 }
 
+subgraph_manifest() {
+  cat <<'EOF'
+cli-plus-git-tui|P3 Git TUI|lazygit|graphs/subgraphs/cli-plus/git-tui.nix
+cli-plus-network|P3 Network CLI|mtr, trippy, socat, ethtool, bandwhich, netop, ncftp|graphs/subgraphs/cli-plus/network.nix
+cli-plus-containers|P3 Containers CLI|distrobox, ctop, lazydocker|graphs/subgraphs/cli-plus/containers.nix
+cli-plus-terminal-identity|P3 Terminal identity|fastfetch, onefetch, starship|graphs/subgraphs/cli-plus/terminal-identity.nix
+cli-plus-disk-process|P3 Disk/proc extra|atop, glances, caligula|graphs/subgraphs/cli-plus/disk-process.nix
+EOF
+}
+
+subgraph_exists() {
+  [ -n "$(subgraph_path "$1")" ]
+}
+
+subgraph_path() {
+  subgraph_manifest | while IFS='|' read -r name _category _packages path; do
+    if [ "$name" = "$1" ]; then
+      printf '%s\n' "$path"
+      exit 0
+    fi
+  done
+}
+
+select_all_subgraphs() {
+  selected_subgraphs=""
+  while IFS='|' read -r name _category _packages _path; do
+    if [ -n "$selected_subgraphs" ]; then
+      selected_subgraphs="$selected_subgraphs $name"
+    else
+      selected_subgraphs="$name"
+    fi
+  done <<EOF
+$(subgraph_manifest)
+EOF
+}
+
+subgraph_selected() {
+  for selected in $selected_subgraphs; do
+    [ "$selected" = "$1" ] && return 0
+  done
+  return 1
+}
+
+toggle_subgraph() {
+  target="$1"
+  next=""
+  found=0
+
+  for selected in $selected_subgraphs; do
+    if [ "$selected" = "$target" ]; then
+      found=1
+      continue
+    fi
+
+    if [ -n "$next" ]; then
+      next="$next $selected"
+    else
+      next="$selected"
+    fi
+  done
+
+  if [ "$found" = 0 ]; then
+    if [ -n "$next" ]; then
+      next="$next $target"
+    else
+      next="$target"
+    fi
+  fi
+
+  selected_subgraphs="$next"
+}
+
+subgraph_by_index() {
+  wanted="$1"
+  current=1
+  while IFS='|' read -r name _category _packages _path; do
+    if [ "$current" = "$wanted" ]; then
+      printf '%s\n' "$name"
+      return 0
+    fi
+    current=$((current + 1))
+  done <<EOF
+$(subgraph_manifest)
+EOF
+  return 1
+}
+
+prompt_subgraphs() {
+  if [ "$all_subgraphs" = 1 ]; then
+    select_all_subgraphs
+    return 0
+  fi
+
+  if [ -n "$selected_subgraphs" ]; then
+    case "$selected_subgraphs" in
+      all)
+        select_all_subgraphs
+        ;;
+      none)
+        selected_subgraphs=""
+        ;;
+    esac
+    return 0
+  fi
+
+  if [ "$yes" = 1 ]; then
+    return 0
+  fi
+
+  if [ ! -t 0 ]; then
+    log "No TTY detected; skipping optional subgraphs."
+    return 0
+  fi
+
+  while :; do
+    log ""
+    log "Optional subgraphs:"
+    i=1
+    while IFS='|' read -r name category packages _path; do
+      mark=" "
+      subgraph_selected "$name" && mark="x"
+      log "  $i) [$mark] $name - $category"
+      log "      $packages"
+      i=$((i + 1))
+    done <<EOF
+$(subgraph_manifest)
+EOF
+
+    printf 'Toggle numbers, "all", "none", or Enter to continue: '
+    read -r answer
+    case "$answer" in
+      "")
+        break
+        ;;
+      all)
+        select_all_subgraphs
+        ;;
+      none)
+        selected_subgraphs=""
+        ;;
+      *)
+        for item in $answer; do
+          case "$item" in
+            *[!0-9]* | "")
+              log "Ignoring invalid selection: $item"
+              ;;
+            *)
+              subgraph=$(subgraph_by_index "$item") || {
+                log "Ignoring unknown selection: $item"
+                continue
+              }
+              toggle_subgraph "$subgraph"
+              ;;
+          esac
+        done
+        ;;
+    esac
+  done
+}
+
 prompt_profiles() {
   if [ "$all_profiles" = 1 ]; then
     select_all_profiles
@@ -182,6 +360,12 @@ validate_selection() {
   for profile in $selected_profiles; do
     profile_exists "$profile" || die "unknown profile: $profile"
   done
+
+  for subgraph in $selected_subgraphs; do
+    subgraph_exists "$subgraph" || die "unknown subgraph: $subgraph"
+    path=$(subgraph_path "$subgraph")
+    [ -f "$repo_dir/$path" ] || die "subgraph module not found: $path"
+  done
 }
 
 confirm_selection() {
@@ -190,6 +374,11 @@ confirm_selection() {
   log "  repo:     $repo_dir"
   log "  user:     $username"
   log "  profiles: $selected_profiles"
+  if [ -n "$selected_subgraphs" ]; then
+    log "  subgraphs: $selected_subgraphs"
+  else
+    log "  subgraphs: none"
+  fi
   log "  action:   $action"
   if [ "$dry_run" = 1 ]; then
     log "  mode:     dry-run"
@@ -282,6 +471,10 @@ make_temp_flake() {
     for profile in $selected_profiles; do
       log "  \"\${nix-universalis}/profiles/home/$profile.nix\""
     done
+    for subgraph in $selected_subgraphs; do
+      path=$(subgraph_path "$subgraph")
+      log "  \"\${nix-universalis}/$path\""
+    done
     log "]"
   } > "$modules_file"
 
@@ -355,6 +548,7 @@ run_nix_action() {
 
 prompt_username
 prompt_profiles
+prompt_subgraphs
 validate_selection
 confirm_selection
 ensure_nix
