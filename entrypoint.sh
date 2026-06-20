@@ -218,10 +218,22 @@ load_nix_environment() {
   fi
 }
 
+enable_nix_features() {
+  nix_features="extra-experimental-features = nix-command flakes"
+  if [ -n "${NIX_CONFIG:-}" ]; then
+    NIX_CONFIG="${NIX_CONFIG}
+${nix_features}"
+  else
+    NIX_CONFIG="$nix_features"
+  fi
+  export NIX_CONFIG
+}
+
 ensure_nix() {
   load_nix_environment
 
   if command -v nix >/dev/null 2>&1; then
+    enable_nix_features
     return 0
   fi
 
@@ -237,6 +249,7 @@ ensure_nix() {
   curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --daemon
   load_nix_environment
   command -v nix >/dev/null 2>&1 || die "Nix installation finished, but nix is not in PATH. Open a new shell and rerun this script."
+  enable_nix_features
 }
 
 nix_string() {
@@ -317,7 +330,7 @@ run_nix_action() {
 
   case "$action" in
     build-only)
-      cmd="nix build 'path:$tmp_flake_dir#homeConfigurations.activation.activationPackage'"
+      cmd="NIX_CONFIG='extra-experimental-features = nix-command flakes' nix build 'path:$tmp_flake_dir#homeConfigurations.activation.activationPackage'"
       if [ "$dry_run" = 1 ]; then
         log "$cmd"
       else
@@ -325,7 +338,7 @@ run_nix_action() {
       fi
       ;;
     switch)
-      cmd="nix run 'path:$tmp_flake_dir#home-manager' -- switch --flake 'path:$tmp_flake_dir#activation'"
+      cmd="NIX_CONFIG='extra-experimental-features = nix-command flakes' nix run 'path:$tmp_flake_dir#home-manager' -- switch --flake 'path:$tmp_flake_dir#activation'"
       if [ "$dry_run" = 1 ]; then
         log "$cmd"
       else
