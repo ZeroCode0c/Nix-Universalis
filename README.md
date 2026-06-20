@@ -37,8 +37,9 @@ Entrypoint:
 
 When run interactively, the entrypoint first installs or loads Nix, then opens a
 subgraph selector powered by `fzf` from `nixpkgs`. Move with arrows, toggle with
-`Tab`, inspect the preview pane to see the exact packages each subgraph
-installs, and press `Enter` to continue to the final confirmation:
+`Ctrl-j`/`Ctrl-k`, toggle with `Tab`, inspect the preview pane to see the exact
+packages each subgraph installs, and press `Enter` to continue to the final
+confirmation:
 
 - `cli-plus-git-tui`: `lazygit`
 - `cli-plus-network`: `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp`

@@ -254,11 +254,21 @@ printf "Subgraph: %s\n" "$name"
 printf "Category: %s\n" "$category"
 printf "Module: %s\n\n" "$path"
 printf "Packages:\n"
-printf "%s\n" "$packages" | tr "," "\n" | sed "s/^ */- /"
+old_ifs=$IFS
+IFS=,
+set -- $packages
+IFS=$old_ifs
+for package do
+  while [ "${package# }" != "$package" ]; do
+    package=${package# }
+  done
+  [ -n "$package" ] && printf "%s\n" "- $package"
+done
 '
 
   if nix shell nixpkgs#fzf -c sh -c '
     fzf --multi \
+      --cycle \
       --height=90% \
       --border \
       --layout=reverse \
@@ -267,16 +277,20 @@ printf "%s\n" "$packages" | tr "," "\n" | sed "s/^ */- /"
       --with-nth="1,2" \
       --preview="$1" \
       --preview-window="right:55%:wrap" \
-      --bind="start:select-all" \
-      --header="Tab toggles, arrows move, Enter accepts, Esc cancels" \
+      --bind="start:select-all,up:up,down:down,ctrl-j:down,ctrl-k:up" \
+      --header="Tab toggles, arrows/Ctrl-j/Ctrl-k move, Enter accepts, Esc cancels" \
       < "$2" > "$3"
   ' sh "$preview_cmd" "$manifest_file" "$selection_file" </dev/tty >/dev/tty 2>/dev/tty
   then
-    selected_subgraphs=$(
-      while IFS='|' read -r name _category _packages _path; do
-        [ -n "$name" ] && printf '%s ' "$name"
-      done < "$selection_file" | sed 's/[[:space:]]*$//'
-    )
+    selected_subgraphs=""
+    while IFS='|' read -r name _category _packages _path; do
+      [ -n "$name" ] || continue
+      if [ -n "$selected_subgraphs" ]; then
+        selected_subgraphs="$selected_subgraphs $name"
+      else
+        selected_subgraphs="$name"
+      fi
+    done < "$selection_file"
     rm -f "$manifest_file" "$selection_file"
     return 0
   fi
