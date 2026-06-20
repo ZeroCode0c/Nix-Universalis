@@ -21,8 +21,28 @@ Build/check:
 nix flake check
 ```
 
+Entrypoint:
+
+```sh
+./entrypoint.sh
+./entrypoint.sh --username alice --profile dev-core --build-only
+./entrypoint.sh --username alice --profile dev-core --switch
+```
+
+If Nix is missing, the entrypoint installs it with the official daemon installer:
+
+```sh
+curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install | sh -s -- --daemon
+```
+
 Apply:
 
 ```sh
 home-manager switch --flake .#spaceinvaders
+```
+
+Docker smoke test:
+
+```sh
+./tests/docker/run.sh
 ```
