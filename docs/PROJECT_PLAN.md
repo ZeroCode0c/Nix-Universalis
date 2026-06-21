@@ -1,212 +1,150 @@
-# Nix Universalis: alcance y plan
+# Nix Universalis: arquitectura y estado actual
 
 ## Objetivo
 
-Nix Universalis busca ser un grafo portable de Home Manager para levantar un
-entorno de desarrollo útil en cualquier máquina: laptop, VM, desktop, TTY,
-servidor o contenedor. La primera etapa no intenta reproducir el sistema
-Hyprland completo; extrae solo el núcleo de desarrollo con baja entropía.
+Nix Universalis es un instalador portable de entorno de usuario basado en
+Nix + Home Manager. Está pensado para levantar un entorno de terminal y
+desarrollo en máquinas nuevas, incluyendo distribuciones no NixOS como Kali.
+
+El proyecto no intenta reproducir `NixOS-Hyprland`. Solo porta componentes de
+usuario que pueden funcionar como Home Manager standalone.
 
 ## Principios
 
 - Home Manager primero.
-- No modificar ni borrar `NixOS-Hyprland`; solo copiar configuraciones útiles.
-- Separar el grafo por pesos y subgrafos.
-- Mantener `dev-core` portable y no acoplado a desktop, hardware ni lenguajes.
-- Agregar toolchains y LSPs como subgrafos posteriores.
-- Probar primero con Docker/dry-run/build-only; después validar en VM.
-- El entrypoint debe ser plug and play y no asumir que Nix ya existe.
+- El perfil base debe ser mínimo.
+- Todo lo instalable debe estar expuesto como subgrafo seleccionable.
+- No debe existir un “core oculto”.
+- El entrypoint debe ser plug and play: si Nix no existe, lo instala.
+- La selección interactiva debe mostrar qué se va a instalar antes de aplicar.
+- Las herramientas de lenguaje, desktop, multimedia y hardware deben ser
+  subgrafos separados cuando se agreguen.
 
-## Pesos
+## Flujo del EntryPoint
 
-- `5`: esencial, portable, vive como subgrafo seleccionable.
-- `4`: core fuerte, portable, vive como subgrafo seleccionable.
-- `3`: útil general, vive como subgrafo opt-in.
-- `2`: preferencia/personalización, no bloquea desarrollo.
-- `1`: fuera del dev core actual.
+`entrypoint.sh` ejecuta este flujo:
 
-## Prioridad 5
+1. Detecta el usuario objetivo.
+2. Selecciona perfil Home Manager.
+3. Valida perfil.
+4. Carga o instala Nix.
+5. Abre selector de subgrafos con `fzf` desde `nixpkgs`.
+6. Genera una flake temporal con los subgrafos seleccionados.
+7. Ejecuta `build-only` o `switch`.
 
-Todos los elementos P5 se exponen desde el selector del entrypoint. El perfil
-base no importa herramientas si no fueron seleccionadas.
+Si la TUI de `fzf` no puede ejecutarse, cae a un selector numerado portable.
 
-| Subgrafo | Categoría | Paquetes/configs |
-| --- | --- | --- |
-| `cli-base-tools` | Base CLI | `bc`, `curl`, `jq`, `killall`, `rsync`, `tree`, `unrar`, `unzip`, `wget` |
-| `dev-build-base` | Build base | `gcc`, `gnumake`, `cmake`, `openssl` |
-| `editors-nvim` | Editores | `neovim`, `micro`, `dots/nvim`, configuración de `micro` |
-| `dev-git` | Git | `git`, `delta`, configuración de `git` |
-| `dev-nix-workflow` | Nix workflow | `nh`, `alejandra`, `nix-prefetch-git`, `nix-output-monitor`, `nvd`, `nixd`, `nixfmt`, `nixpkgs-fmt` |
-| `files-search` | Búsqueda/archivos | `fzf`, `ripgrep`, `fd`, `findutils`, `bat`, `bat-extras.batman`, `bat-extras.batpipe` |
-| `shell-zsh` | Shell workflow | `zsh`, `oh-my-zsh`, autosuggestions, syntax highlighting, `zoxide`, `zshnip`, configuración de `zsh` |
-| `terminals-tmux` | Multiplexor | `tmux`, configuración de `tmux` |
+## Perfil
 
-Nota: `home-manager` se activa con `programs.home-manager.enable`; no se añade
-como paquete manual porque duplica derivaciones en el perfil.
+El único perfil actual es:
 
-Nota: `clang` se sacó del core porque entra en conflicto con `gcc` en un mismo
-perfil de Home Manager al exportar `bin/ld`. Debe vivir en el subgrafo C/C++.
-
-## Prioridad 4
-
-Todos los elementos P4 también son subgrafos seleccionables.
-
-| Subgrafo | Categoría | Paquetes/configs |
-| --- | --- | --- |
-| `files-yazi` | File navigation | `eza`, `lsd`, `yazi`, Yazi plugins, `dots/yazi-source` |
-| `cli-docs` | Docs rápidas | `tealdeer`, `mdcat`, `frogmouth` |
-| `cli-monitoring` | Terminal monitoring | `htop`, `btop`, `bottom`, `ncdu`, `dua`, `duf`, `dysk`, `gdu`, `parallel-disk-usage` |
-| `cli-metrics` | Dev metrics/process | `tokei`, `hyperfine`, `pik`, `erdtree`, `lstr` |
-
-## Terminales
-
-| Subgrafo | Paquetes/configs |
+| Perfil | Propósito |
 | --- | --- |
-| `terminals-kitty-zellij` | `kitty`, `dots/kitty`, `zellij`, configuración de `zellij` |
+| `dev-core` | Perfil Home Manager mínimo. Define usuario, home, `stateVersion` y activa `programs.home-manager.enable`. No instala herramientas por sí mismo. |
 
-## Prioridad 3
+## Estructura de Grafos
 
-Estos paquetes son útiles, pero no deberían contaminar selecciones mínimas.
-Viven como subgrafos temáticos seleccionables desde el entrypoint.
+La carpeta `graphs/` está organizada por tema:
 
-| Subgrafo | Categoría | Paquetes |
-| --- | --- | --- |
-| `dev-git-tui` | Git TUI | `lazygit` |
-| `network-cli` | Network CLI | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
-| `containers-cli` | Containers CLI | `distrobox`, `ctop`, `lazydocker` |
-| `cli-terminal-identity` | Terminal identity | `fastfetch`, `onefetch`, `starship` |
-| `system-disk-process` | Disk/proc extra | `atop`, `glances`, `caligula` |
-
-## Prioridad 2
-
-Paquetes de preferencia visual, identidad o gusto personal. Son candidatos a un
-subgrafo `personal-cli` o `terminal-aesthetics`.
-
-| Categoría | Paquetes |
-| --- | --- |
-| Prompt/tema | `oh-my-posh` |
-| Visual CLI | `figlet`, `lolcat`, `cmatrix` |
-| Fetch tools | `macchina`, `hyfetch`, `pfetch`, `ipfetch`, `cpufetch` |
-| Terminal media | `mcat` |
-
-## Prioridad 1: fuera del dev core
-
-Estos paquetes no entran en la etapa actual. Pueden aparecer después como
-subgrafos separados: desktop, Hyprland, multimedia, hardware, virtualización,
-apps personales, etc.
-
-| Motivo | Paquetes |
-| --- | --- |
-| Hyprland/Wayland/UI | `hypridle`, `hyprpolkitagent`, `pyprland`, `hyprlang`, `hyprshot`, `hyprcursor`, `nwg-displays`, `nwg-look`, `waypaper`, `waybar`, `waybar-weather`, `hyprland-qt-support`, `rofi`, `slurp`, `swappy`, `swaynotificationcenter`, `wallust`, `wdisplays`, `wl-clipboard`, `wtype`, `wlr-randr`, `wlogout`, `quickshell`, `ags`, `cliphist`, `awww` |
-| Desktop/apps | `firefox`, `google-chrome`, `discord`, `telegram-desktop`, `proton-pass`, `proton-vpn`, `obs-studio`, `vlc`, `loupe`, `eog`, `baobab`, `gnome-system-monitor`, `mission-center`, `thunar`, `mousepad`, `file-roller`, `xarchiver`, `yad` |
-| Audio/media | `ffmpeg`, `mpv`, `yt-dlp`, `cava`, `ncmpcpp`, `mpd`, `mpc`, `pamixer`, `pavucontrol`, `playerctl` |
-| Theme/GTK/Qt | `gtk-engine-murrine`, `glib`, `gsettings-qt`, `kdePackages.qt6ct`, `kdePackages.qtwayland`, `kdePackages.qtstyleplugin-kvantum`, `libsForQt5.qtstyleplugin-kvantum`, `libsForQt5.qt5ct`, `libappindicator`, `libnotify`, `sweet`, `beauty-line-icon-theme` |
-| Hardware/sistema | `power-profiles-daemon`, `btrfs-progs`, `cpufrequtils`, `pciutils`, `nvtopPackages.full`, `v4l-utils`, `smartmontools`, `brightnessctl`, `lm_sensors`, `cyme`, `cpu-x`, `cpuid`, `inxi` |
-| Virtualización/personal | `virt-viewer`, `libvirt`, `rclone`, `appimage-run`, `kdeconnect-kde`, `steam` |
-
-## Subgrafos de lenguaje pendientes
-
-Estos paquetes ya fueron identificados, pero quedan fuera de `dev-core`. Deben
-entrar como subgrafos independientes para evitar acoplar el core a lenguajes
-específicos.
-
-| Subgrafo | Paquetes |
-| --- | --- |
-| JS/TS/Web | `nodejs`, `vscode-langservers-extracted`, `tailwindcss-language-server`, `typescript-language-server`, `prettierd` |
-| Lua | `lua-language-server`, `stylua`, `luarocks` |
-| Python | `basedpyright`, `ruff`, `black`, `python3Packages.pytest`, `python3Packages.mypy`, `python3Packages.debugpy` |
-| Bash | `bash-language-server`, `shfmt` |
-| Go | `gopls`, `gotools`, `golines`, `gofumpt`, `delve`, `golangci-lint`, `go-tools` |
-| Rust | `cargo-flamegraph`, `cargo-criterion`, `cargo-expand`, `cargo-deny`, `cargo-audit`, `cargo-nextest`, `cargo-watch`, `cargo-outdated`, `perf-tools` |
-| C/C++ | `clang`, `clang-tools`, `lldb`, `valgrind`, `cppcheck`, `include-what-you-use` |
-| Haskell | `haskell-language-server`, `ormolu`, `hlint`, `stack`, `haskellPackages.hoogle` |
-| Config formats | `yaml-language-server`, `taplo` |
-
-## Estado actual
-
-Implementado:
-
-- `graphs/cli`
-- `graphs/dev`
-- `graphs/editors`
-- `graphs/files`
-- `graphs/shell`
-- `graphs/terminals`
-- `graphs/network`
-- `graphs/containers`
-- `graphs/system`
-- `profiles/home/dev-core.nix`
-- `entrypoint.sh`
-- Docker smoke test dry-run
-- Flake con Home Manager standalone
-- Dots copiados para Neovim y Yazi
-
-Verificaciones actuales:
-
-```sh
-nix fmt
-nix flake check
-nix build .#homeConfigurations.spaceinvaders.activationPackage
-./entrypoint.sh --username tester --profile dev-core --build-only --yes
-./tests/docker/run.sh
+```text
+graphs/
+  cli/
+  containers/
+  dev/
+  editors/
+  files/
+  network/
+  shell/
+  system/
+  terminals/
 ```
 
-## Siguientes pasos
+Cada archivo dentro de esas carpetas es un subgrafo seleccionable desde el
+entrypoint.
 
-1. Endurecer `entrypoint.sh`.
-   - Añadir opción `--repo-url` para instalación remota desde Git.
-   - Añadir modo `--no-install-nix` para pruebas controladas.
-   - Mejorar mensajes cuando el instalador de Nix requiere abrir una nueva shell.
+## Subgrafos Actuales
 
-2. Probar Docker con Nix real.
-   - Crear un Dockerfile separado para single-user Nix o usar una imagen base con Nix.
-   - Validar `build-only` dentro de contenedor.
-   - Mantener el test actual como smoke test rápido sin instalación.
+| Subgrafo | Ruta | Contenido |
+| --- | --- | --- |
+| `cli-base-tools` | `graphs/cli/base-tools.nix` | `bc`, `curl`, `jq`, `killall`, `rsync`, `tree`, `unrar`, `unzip`, `wget` |
+| `cli-docs` | `graphs/cli/docs.nix` | `tealdeer`, `mdcat`, `frogmouth` |
+| `cli-monitoring` | `graphs/cli/monitoring.nix` | `htop`, `btop`, `bottom`, `ncdu`, `dua`, `duf`, `dysk`, `gdu`, `parallel-disk-usage` |
+| `cli-metrics` | `graphs/cli/metrics.nix` | `erdtree`, `hyperfine`, `lstr`, `pik`, `tokei` |
+| `cli-terminal-identity` | `graphs/cli/terminal-identity.nix` | `fastfetch`, `onefetch`, `starship` |
+| `containers-cli` | `graphs/containers/cli.nix` | `distrobox`, `ctop`, `lazydocker` |
+| `dev-build-base` | `graphs/dev/build-base.nix` | `cmake`, `gcc`, `gnumake`, `openssl` |
+| `dev-git` | `graphs/dev/git.nix` | `git`, `delta`, aliases/config Git |
+| `dev-git-tui` | `graphs/dev/git-tui.nix` | `lazygit` |
+| `dev-nix-workflow` | `graphs/dev/nix-workflow.nix` | `nh`, `alejandra`, `nix-output-monitor`, `nix-prefetch-git`, `nvd`, `nixd`, `nixfmt`, `nixpkgs-fmt` |
+| `editors-nvim` | `graphs/editors/nvim.nix` | `neovim`, `micro`, `dots/nvim`, configuración de Micro |
+| `files-search` | `graphs/files/search.nix` | `fzf`, `bat`, `batman`, `batpipe`, `fd`, `findutils`, `ripgrep` |
+| `files-yazi` | `graphs/files/yazi.nix` | `eza`, `yazi`, plugins/config de Yazi |
+| `network-cli` | `graphs/network/cli.nix` | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
+| `shell-zsh` | `graphs/shell/zsh.nix` | `zsh`, Oh My Zsh, autosuggestions, syntax highlighting, `zoxide`, `zshnip`, aliases |
+| `system-disk-process` | `graphs/system/disk-process.nix` | `atop`, `glances`, `caligula` |
+| `terminals-kitty-zellij` | `graphs/terminals/kitty-zellij.nix` | `kitty`, `dots/kitty`, `zellij`, config de Zellij |
+| `terminals-tmux` | `graphs/terminals/tmux.nix` | `tmux`, configuración de Tmux |
 
-3. Validar en VM limpia.
-   - Usuario distinto de `spaceinvaders`.
-   - Nix ausente al inicio.
-   - `entrypoint.sh --profile dev-core --switch`.
-   - Logout/login o nueva shell tras instalación daemon si hace falta.
+## Dotfiles Portados
 
-4. Reducir acoplamiento de dots.
-   - Revisar `dots/nvim` porque contiene plugins orientados a lenguajes.
-   - Separar config base de Neovim y plugins por lenguaje.
-   - Evaluar si `semsearch` debe ser core o subgrafo de conocimiento/lenguaje.
+| Ruta | Usado por |
+| --- | --- |
+| `dots/nvim` | `editors-nvim` |
+| `dots/yazi-source` | `files-yazi` |
+| `dots/kitty` | `terminals-kitty-zellij` |
 
-5. Crear subgrafos temáticos P3.
-   - Network CLI.
-   - Containers CLI.
-   - Terminal identity.
-   - Utilidades no esenciales pero muy útiles.
-   - Mantenerlos opt-in desde el entrypoint.
+## Comandos de Validación
 
-6. Crear subgrafos por lenguaje.
-   - `languages/nix`
-   - `languages/python`
-   - `languages/rust`
-   - `languages/go`
-   - `languages/web`
-   - `languages/cpp`
-   - `languages/haskell`
+```sh
+sh -n entrypoint.sh
+nix fmt -- --check README.md docs/PROJECT_PLAN.md profiles/home/dev-core.nix graphs/**/*.nix
+nix flake check
+./entrypoint.sh --username tester --profile dev-core --build-only --yes
+./entrypoint.sh --username tester --profile dev-core --subgraph editors-nvim --build-only --yes
+./entrypoint.sh --username tester --profile dev-core --subgraph terminals-kitty-zellij --build-only --yes
+```
 
-7. Crear subgrafos fuera del core.
-   - `desktop/hyprland`
-   - `desktop/apps`
-   - `media`
-   - `hardware`
-   - `virtualization`
-   - `personal`
+## Comandos de Uso
 
-8. Definir política de perfiles.
-   - `dev-core`: perfil Home Manager mínimo.
-   - P5/P4/P3: subgrafos seleccionables por categoría.
-   - `full-dev`: core + lenguajes seleccionados.
+Interactivo:
 
-## Riesgos conocidos
+```sh
+./entrypoint.sh
+```
 
+Sin aplicar cambios:
+
+```sh
+./entrypoint.sh --build-only
+```
+
+No interactivo con todos los subgrafos:
+
+```sh
+./entrypoint.sh --username kali --profile dev-core --all-subgraphs --switch --yes
+```
+
+No interactivo con un subgrafo:
+
+```sh
+./entrypoint.sh --username kali --profile dev-core --subgraph editors-nvim --switch --yes
+```
+
+## Riesgos Conocidos
+
+- `dots/nvim` todavía contiene plugins orientados a lenguajes. Debe separarse en
+  base y subgrafos de lenguaje.
 - Home Manager puede chocar si dos paquetes exportan el mismo path.
-- Algunas configuraciones copiadas todavía tienen referencias personales.
-- El instalador daemon de Nix puede requerir privilegios y reiniciar shell.
-- Neovim puede cargar plugins que esperan toolchains no instalados todavía.
-- Docker no replica perfectamente una VM o máquina real con systemd.
+- El instalador daemon de Nix puede requerir `sudo`.
+- En shells abiertas antes de instalar Nix, puede hacer falta abrir una nueva
+  sesión para que el entorno quede cargado.
+- Docker no reemplaza una validación en VM limpia con systemd.
+
+## Siguientes Pasos
+
+1. Separar `dots/nvim` en base + lenguajes.
+2. Crear subgrafos `languages/*`.
+3. Añadir modo `--no-install-nix` para pruebas controladas.
+4. Añadir `--repo-url` para instalación remota.
+5. Validar `switch` completo en VM limpia.
+6. Mejorar tests Docker con Nix real, no solo dry-run.
