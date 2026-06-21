@@ -19,29 +19,27 @@ Hyprland completo; extrae solo el núcleo de desarrollo con baja entropía.
 
 ## Pesos
 
-- `5`: esencial, portable, entra en `dev-core/p5`.
-- `4`: core fuerte, portable, entra en `dev-core/p4`.
-- `3`: útil general, candidato a `dev-core-plus` o subgrafo opt-in.
+- `5`: esencial, portable, vive como subgrafo seleccionable.
+- `4`: core fuerte, portable, vive como subgrafo seleccionable.
+- `3`: útil general, vive como subgrafo opt-in.
 - `2`: preferencia/personalización, no bloquea desarrollo.
 - `1`: fuera del dev core actual.
 
 ## Prioridad 5
 
-| Categoría | Paquetes/configs |
-| --- | --- |
-| Shell base | `zsh`, `oh-my-zsh`, zsh autosuggestions, zsh syntax highlighting |
-| Shell workflow | `fzf`, `zoxide`, `zshnip` |
-| Editores | `neovim`, `micro` |
-| Multiplexor | `tmux` |
-| Git | `git`, `delta` |
-| Búsqueda/archivos | `ripgrep`, `fd`, `findutils`, `bat`, `bat-extras.batman`, `bat-extras.batpipe` |
-| HTTP/datos | `curl`, `wget`, `jq` |
-| Build base | `gcc`, `gnumake`, `cmake`, `openssl`, `bc` |
-| Compresión base | `unzip`, `unrar` |
-| Utilidades base | `killall`, `rsync`, `tree` |
-| Nix workflow | `nh`, `alejandra`, `nix-prefetch-git`, `nix-output-monitor`, `nvd` |
-| Nix editor support | `nixd`, `nixfmt`, `nixpkgs-fmt` |
-| Configs copiadas | `dots/nvim`, configuración de `micro`, configuración de `tmux`, configuración de `git`, configuración de `fzf`, configuración de `bat`, configuración de `zsh` |
+Todos los elementos P5 se exponen desde el selector del entrypoint. El perfil
+base no importa herramientas si no fueron seleccionadas.
+
+| Subgrafo | Categoría | Paquetes/configs |
+| --- | --- | --- |
+| `cli-base-tools` | Base CLI | `bc`, `curl`, `jq`, `killall`, `rsync`, `tree`, `unrar`, `unzip`, `wget` |
+| `dev-build-base` | Build base | `gcc`, `gnumake`, `cmake`, `openssl` |
+| `editors-nvim` | Editores | `neovim`, `micro`, `dots/nvim`, configuración de `micro` |
+| `dev-git` | Git | `git`, `delta`, configuración de `git` |
+| `dev-nix-workflow` | Nix workflow | `nh`, `alejandra`, `nix-prefetch-git`, `nix-output-monitor`, `nvd`, `nixd`, `nixfmt`, `nixpkgs-fmt` |
+| `files-search` | Búsqueda/archivos | `fzf`, `ripgrep`, `fd`, `findutils`, `bat`, `bat-extras.batman`, `bat-extras.batpipe` |
+| `shell-zsh` | Shell workflow | `zsh`, `oh-my-zsh`, autosuggestions, syntax highlighting, `zoxide`, `zshnip`, configuración de `zsh` |
+| `terminals-tmux` | Multiplexor | `tmux`, configuración de `tmux` |
 
 Nota: `home-manager` se activa con `programs.home-manager.enable`; no se añade
 como paquete manual porque duplica derivaciones en el perfil.
@@ -51,29 +49,33 @@ perfil de Home Manager al exportar `bin/ld`. Debe vivir en el subgrafo C/C++.
 
 ## Prioridad 4
 
-| Categoría | Paquetes/configs |
+Todos los elementos P4 también son subgrafos seleccionables.
+
+| Subgrafo | Categoría | Paquetes/configs |
+| --- | --- | --- |
+| `files-yazi` | File navigation | `eza`, `lsd`, `yazi`, Yazi plugins, `dots/yazi-source` |
+| `cli-docs` | Docs rápidas | `tealdeer`, `mdcat`, `frogmouth` |
+| `cli-monitoring` | Terminal monitoring | `htop`, `btop`, `bottom`, `ncdu`, `dua`, `duf`, `dysk`, `gdu`, `parallel-disk-usage` |
+| `cli-metrics` | Dev metrics/process | `tokei`, `hyperfine`, `pik`, `erdtree`, `lstr` |
+
+## Terminales
+
+| Subgrafo | Paquetes/configs |
 | --- | --- |
-| Navegación/listado | `eza`, `lsd`, `tree` |
-| File manager TUI | `yazi`, `yaziPlugins.lazygit`, `yaziPlugins.full-border`, `yaziPlugins.git`, `yaziPlugins.smart-enter` |
-| Docs rápidas | `tealdeer`, `mdcat`, `frogmouth` |
-| Terminal monitoring | `htop`, `btop`, `bottom`, `ncdu`, `dua`, `duf`, `dysk`, `gdu`, `parallel-disk-usage` |
-| Dev metrics | `tokei`, `hyperfine` |
-| Process/util | `pik`, `erdtree`, `lstr` |
-| Configs copiadas | `dots/yazi-source` |
+| `terminals-kitty-zellij` | `kitty`, `dots/kitty`, `zellij`, configuración de `zellij` |
 
 ## Prioridad 3
 
-Estos paquetes son útiles, pero no deberían contaminar el `dev-core` mínimo.
-Viven como subgrafos opt-in bajo `graphs/subgraphs/cli-plus`, seleccionables
-desde el entrypoint.
+Estos paquetes son útiles, pero no deberían contaminar selecciones mínimas.
+Viven como subgrafos temáticos seleccionables desde el entrypoint.
 
 | Subgrafo | Categoría | Paquetes |
 | --- | --- | --- |
-| `cli-plus-git-tui` | Git TUI | `lazygit` |
-| `cli-plus-network` | Network CLI | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
-| `cli-plus-containers` | Containers CLI | `distrobox`, `ctop`, `lazydocker` |
-| `cli-plus-terminal-identity` | Terminal identity | `fastfetch`, `onefetch`, `starship` |
-| `cli-plus-disk-process` | Disk/proc extra | `atop`, `glances`, `caligula` |
+| `dev-git-tui` | Git TUI | `lazygit` |
+| `network-cli` | Network CLI | `mtr`, `trippy`, `socat`, `ethtool`, `bandwhich`, `netop`, `ncftp` |
+| `containers-cli` | Containers CLI | `distrobox`, `ctop`, `lazydocker` |
+| `cli-terminal-identity` | Terminal identity | `fastfetch`, `onefetch`, `starship` |
+| `system-disk-process` | Disk/proc extra | `atop`, `glances`, `caligula` |
 
 ## Prioridad 2
 
@@ -124,8 +126,15 @@ específicos.
 
 Implementado:
 
-- `graphs/dev-core/p5`
-- `graphs/dev-core/p4`
+- `graphs/cli`
+- `graphs/dev`
+- `graphs/editors`
+- `graphs/files`
+- `graphs/shell`
+- `graphs/terminals`
+- `graphs/network`
+- `graphs/containers`
+- `graphs/system`
 - `profiles/home/dev-core.nix`
 - `entrypoint.sh`
 - Docker smoke test dry-run
@@ -165,7 +174,7 @@ nix build .#homeConfigurations.spaceinvaders.activationPackage
    - Separar config base de Neovim y plugins por lenguaje.
    - Evaluar si `semsearch` debe ser core o subgrafo de conocimiento/lenguaje.
 
-5. Crear subgrafos `cli-plus`.
+5. Crear subgrafos temáticos P3.
    - Network CLI.
    - Containers CLI.
    - Terminal identity.
@@ -190,9 +199,8 @@ nix build .#homeConfigurations.spaceinvaders.activationPackage
    - `personal`
 
 8. Definir política de perfiles.
-   - `dev-core`: P5 + P4.
-   - `dev-core-minimal`: solo P5.
-   - P3: subgrafos opt-in por categoría.
+   - `dev-core`: perfil Home Manager mínimo.
+   - P5/P4/P3: subgrafos seleccionables por categoría.
    - `full-dev`: core + lenguajes seleccionados.
 
 ## Riesgos conocidos

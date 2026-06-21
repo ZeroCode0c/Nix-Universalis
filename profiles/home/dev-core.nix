@@ -1,8 +1,4 @@
 {username, ...}: {
-  imports = [
-    ../../graphs/dev-core
-  ];
-
   home = {
     inherit username;
     homeDirectory = "/home/${username}";

@@ -3,8 +3,8 @@
   lib,
   ...
 }: let
-  yaziSettings = import ../../../dots/yazi-source/yazi.nix;
-  yaziKeymap = import ../../../dots/yazi-source/keymap.nix;
+  yaziSettings = import ../../dots/yazi-source/yazi.nix;
+  yaziKeymap = import ../../dots/yazi-source/keymap.nix;
 in {
   programs.eza = {
     enable = true;
@@ -47,6 +47,6 @@ in {
   };
 
   home.file.".config/yazi/theme.toml" = lib.mkForce {
-    source = ../../../dots/yazi-source/theme.toml;
+    source = ../../dots/yazi-source/theme.toml;
   };
 }

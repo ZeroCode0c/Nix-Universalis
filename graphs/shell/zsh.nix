@@ -3,7 +3,7 @@
   lib,
   ...
 }: let
-  zshnip = pkgs.callPackage ../../../pkgs/zshnip.nix {inherit pkgs;};
+  zshnip = pkgs.callPackage ../../pkgs/zshnip.nix {inherit pkgs;};
 in {
   programs.zsh = {
     enable = true;

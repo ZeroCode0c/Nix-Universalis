@@ -23,7 +23,7 @@ Options:
 Examples:
   ./entrypoint.sh
   ./entrypoint.sh --username alice --profile dev-core --switch
-  ./entrypoint.sh --username alice --profile dev-core --subgraph cli-plus-git-tui --switch
+  ./entrypoint.sh --username alice --profile dev-core --subgraph editors-nvim --switch
   ./entrypoint.sh --username alice --profile dev-core --build-only
 EOF
 }
@@ -153,11 +153,24 @@ select_all_profiles() {
 
 subgraph_manifest() {
   cat <<'EOF'
-cli-plus-git-tui|P3 Git TUI|lazygit|graphs/subgraphs/cli-plus/git-tui.nix
-cli-plus-network|P3 Network CLI|mtr, trippy, socat, ethtool, bandwhich, netop, ncftp|graphs/subgraphs/cli-plus/network.nix
-cli-plus-containers|P3 Containers CLI|distrobox, ctop, lazydocker|graphs/subgraphs/cli-plus/containers.nix
-cli-plus-terminal-identity|P3 Terminal identity|fastfetch, onefetch, starship|graphs/subgraphs/cli-plus/terminal-identity.nix
-cli-plus-disk-process|P3 Disk/proc extra|atop, glances, caligula|graphs/subgraphs/cli-plus/disk-process.nix
+cli-base-tools|P5 Base CLI|bc, curl, jq, killall, rsync, tree, unrar, unzip, wget|graphs/cli/base-tools.nix
+cli-docs|P4 Quick docs|tealdeer, mdcat, frogmouth|graphs/cli/docs.nix
+cli-monitoring|P4 Terminal monitoring|htop, btop, bottom, ncdu, dua, duf, dysk, gdu, parallel-disk-usage|graphs/cli/monitoring.nix
+cli-metrics|P4 Dev metrics|erdtree, hyperfine, lstr, pik, tokei|graphs/cli/metrics.nix
+cli-terminal-identity|P3 Terminal identity|fastfetch, onefetch, starship|graphs/cli/terminal-identity.nix
+containers-cli|P3 Containers CLI|distrobox, ctop, lazydocker|graphs/containers/cli.nix
+dev-build-base|P5 Build base|cmake, gcc, gnumake, openssl|graphs/dev/build-base.nix
+dev-git|P5 Git core|git, delta, git aliases and config|graphs/dev/git.nix
+dev-git-tui|P3 Git TUI|lazygit|graphs/dev/git-tui.nix
+dev-nix-workflow|P5 Nix workflow|nh, alejandra, nix-output-monitor, nix-prefetch-git, nvd, nixd, nixfmt, nixpkgs-fmt|graphs/dev/nix-workflow.nix
+editors-nvim|P5 Editors and Neovim config|neovim, micro, dots/nvim, micro settings|graphs/editors/nvim.nix
+files-search|P5 Search and file viewing|fzf, bat, batman, batpipe, fd, findutils, ripgrep|graphs/files/search.nix
+files-yazi|P4 File navigation TUI|eza, yazi, yazi plugins, dots/yazi-source|graphs/files/yazi.nix
+network-cli|P3 Network CLI|mtr, trippy, socat, ethtool, bandwhich, netop, ncftp|graphs/network/cli.nix
+shell-zsh|P5 Zsh shell workflow|zsh, oh-my-zsh, autosuggestions, syntax highlighting, zoxide, zshnip, shell aliases|graphs/shell/zsh.nix
+system-disk-process|P3 Disk/proc extra|atop, glances, caligula|graphs/system/disk-process.nix
+terminals-kitty-zellij|Terminal emulator and multiplexer|kitty, kitty config, zellij, zellij config|graphs/terminals/kitty-zellij.nix
+terminals-tmux|P5 Tmux|tmux, tmux config|graphs/terminals/tmux.nix
 EOF
 }
 
@@ -320,6 +333,7 @@ prompt_subgraphs() {
   fi
 
   if [ "$yes" = 1 ]; then
+    select_all_subgraphs
     return 0
   fi
 

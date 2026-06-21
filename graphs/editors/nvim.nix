@@ -10,7 +10,7 @@
 
   xdg.configFile = {
     nvim = {
-      source = ../../../dots/nvim;
+      source = ../../dots/nvim;
       recursive = true;
     };
     "micro/settings.json".text = ''
